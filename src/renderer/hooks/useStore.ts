@@ -1,22 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   AppState, Playlist, Announcement, DaySchedule, Holiday,
-  DEFAULT_WEEK, DEFAULT_EQ, COLORS
+  DEFAULT_WEEK, DEFAULT_EQ, COLORS, AudioFile
 } from '../types'
 
 const isElectron = typeof window !== 'undefined' && !!window.bmm
 
 const DEMO_PLAYLISTS: Playlist[] = [
-  { id: 'pl1', name: 'Утренний джаз',  folder: '', color: 0, transition: 'crossfade3', files: [] },
-  { id: 'pl2', name: 'Дневной поп',    folder: '', color: 1, transition: 'crossfade3', files: [] },
-  { id: 'pl3', name: 'Вечерний лаунж', folder: '', color: 2, transition: 'pause1',     files: [] },
+  { id: 'pl1', name: 'Утренний джаз', folder: '/music/jazz', color: 0, transition: 'crossfade3', files: [] },
+  { id: 'pl2', name: 'Дневной поп',   folder: '/music/pop',  color: 1, transition: 'crossfade3', files: [] },
+  { id: 'pl3', name: 'Вечерний лаунж',folder: '/music/lounge',color:2, transition: 'pause1',     files: [] },
 ]
+
 const DEMO_ANNS: Announcement[] = [
-  { id: 'a1', name: 'Акция недели', file: '', dur: '0:48' },
-  { id: 'a2', name: 'Часы работы',  file: '', dur: '0:32' },
-  { id: 'a3', name: 'Новинки',      file: '', dur: '1:05' },
-  { id: 'a4', name: 'Скидки −20%',  file: '', dur: '0:41' },
+  { id: 'a1', name: 'Акция недели',  file: 'akcia.mp3',   dur: '0:48' },
+  { id: 'a2', name: 'Часы работы',   file: 'hours.mp3',   dur: '0:32' },
+  { id: 'a3', name: 'Новинки',       file: 'novinki.mp3', dur: '1:05' },
+  { id: 'a4', name: 'Скидки −20%',   file: 'skidki.mp3',  dur: '0:41' },
 ]
+
 const DEMO_WEEK: DaySchedule[] = DEFAULT_WEEK.map((d, i) => ({
   ...d,
   playlistId: i % 2 === 0 ? 'pl1' : 'pl2',
@@ -38,14 +40,16 @@ const INITIAL: AppState = {
   theme: 'dark',
 }
 
+async function persist(key: string, val: unknown) {
+  if (isElectron) await window.bmm.save(key, val)
+}
+
 export function useStore() {
   const [state, setState] = useState<AppState>(INITIAL)
-  const [isDirty, setIsDirty] = useState(false)
+  const [dirty, setDirty] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [saving, setSaving] = useState(false)
-  const savedRef = useRef<AppState>(INITIAL)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Load from disk
   useEffect(() => {
     if (!isElectron) return
     ;(async () => {
@@ -57,8 +61,8 @@ export function useStore() {
         window.bmm.load('eq', DEFAULT_EQ),
         window.bmm.load('prefs', { mode: 'broadcast', theme: 'dark' }),
       ])
-      const loaded: AppState = {
-        ...INITIAL,
+      setState(s => ({
+        ...s,
         playlists: playlists as Playlist[],
         announcements: anns as Announcement[],
         week: week as DaySchedule[],
@@ -66,65 +70,48 @@ export function useStore() {
         eq: eq as typeof DEFAULT_EQ,
         mode: (prefs as { mode: string }).mode as AppState['mode'],
         theme: (prefs as { theme: string }).theme as AppState['theme'],
-      }
-      setState(loaded)
-      savedRef.current = loaded
-      setIsDirty(false)
+      }))
     })()
   }, [])
 
-  // Window title asterisk
+  // Auto-save every 30 sec when dirty
   useEffect(() => {
-    document.title = isDirty ? '● Business Music Manager' : 'Business Music Manager'
-  }, [isDirty])
+    if (!dirty) return
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(() => {
+      saveAll()
+    }, 30000)
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+  }, [dirty, state])
 
-  // Autosave every 30s
-  useEffect(() => {
-    if (!isDirty) return
-    const t = setTimeout(() => performSave(state), 30000)
-    return () => clearTimeout(t)
-  }, [isDirty, state])
+  const saveAll = useCallback(async () => {
+    await Promise.all([
+      persist('playlists', state.playlists),
+      persist('announcements', state.announcements),
+      persist('week', state.week),
+      persist('holidays', state.holidays),
+      persist('eq', state.eq),
+      persist('prefs', { mode: state.mode, theme: state.theme }),
+    ])
+    setDirty(false)
+    setLastSaved(new Date())
+  }, [state])
 
   const update = useCallback(<K extends keyof AppState>(key: K, val: AppState[K]) => {
-    setState(s => {
-      const next = { ...s, [key]: val }
-      return next
-    })
-    setIsDirty(true)
+    setState(s => ({ ...s, [key]: val }))
+    setDirty(true)
   }, [])
-
-  async function performSave(s: AppState) {
-    if (!isElectron) { setIsDirty(false); setLastSaved(new Date()); return }
-    setSaving(true)
-    try {
-      await Promise.all([
-        window.bmm.save('playlists', s.playlists),
-        window.bmm.save('announcements', s.announcements),
-        window.bmm.save('week', s.week),
-        window.bmm.save('holidays', s.holidays),
-        window.bmm.save('eq', s.eq),
-        window.bmm.save('prefs', { mode: s.mode, theme: s.theme }),
-      ])
-      savedRef.current = s
-      setIsDirty(false)
-      setLastSaved(new Date())
-    } finally { setSaving(false) }
-  }
-
-  const save = useCallback(() => performSave(state), [state])
 
   const getPl = (id: string) => state.playlists.find(p => p.id === id)
   const getAnn = (id: string) => state.announcements.find(a => a.id === id)
 
   const plUsedIn = (id: string) => {
-    const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
-    const days = state.week.filter(d => d.playlistId === id && d.on).map((_, i) => DAYS[i])
+    const days = state.week.filter(d => d.playlistId === id && d.on).map((_, i) => ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i])
     const hols = state.holidays.filter(h => h.playlistId === id && h.on).map(h => h.name)
     return [...days, ...hols]
   }
   const annUsedIn = (id: string) => {
-    const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
-    const days = state.week.filter(d => d.anns.some(a => a.annId === id)).map((_, i) => DAYS[i])
+    const days = state.week.filter(d => d.anns.some(a => a.annId === id)).map((_, i) => ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i])
     const hols = state.holidays.filter(h => h.anns.some(a => a.annId === id)).map(h => h.name)
     return [...days, ...hols]
   }
@@ -132,26 +119,58 @@ export function useStore() {
   const addPlaylist = useCallback(async (name: string) => {
     const col = state.playlists.length % COLORS.length
     let folder = ''
-    let files: { name: string; path: string }[] = []
+    let files: AudioFile[] = []
     if (isElectron) {
-      const f = await window.bmm.pickFolder()
-      if (f) { folder = f; files = await window.bmm.scanFolder(f) }
+      folder = (await window.bmm.pickFolder()) || ''
+      if (folder) files = await window.bmm.scanFolder(folder)
     }
     const pl: Playlist = { id: 'pl' + Date.now(), name, folder, color: col, transition: 'crossfade3', files }
-    update('playlists', [...state.playlists, pl])
+    const next = [...state.playlists, pl]
+    update('playlists', next)
     return pl
   }, [state.playlists, update])
 
+  const addFilesToPlaylist = useCallback(async (plId: string) => {
+    if (!isElectron) return
+    const paths = await window.bmm.pickFiles()
+    if (!paths.length) return
+    const newFiles: AudioFile[] = paths.map(p => ({ name: p.split(/[/\\]/).pop()?.replace(/\.[^.]+$/, '') || p, path: p }))
+    const next = state.playlists.map(pl =>
+      pl.id === plId ? { ...pl, files: [...pl.files, ...newFiles.filter(f => !pl.files.find(e => e.path === f.path))] } : pl
+    )
+    update('playlists', next)
+  }, [state.playlists, update])
+
+  const addFolderToPlaylist = useCallback(async (plId: string) => {
+    if (!isElectron) return
+    const folder = await window.bmm.pickFolder()
+    if (!folder) return
+    const files = await window.bmm.scanFolder(folder)
+    const next = state.playlists.map(pl =>
+      pl.id === plId ? { ...pl, folder, files } : pl
+    )
+    update('playlists', next)
+  }, [state.playlists, update])
+
   const addAnnouncement = useCallback(async (name: string) => {
-    let file = ''
+    let file = name + '.mp3'
     if (isElectron) {
       const paths = await window.bmm.pickFiles()
-      file = paths[0] ? (paths[0].split(/[/\\]/).pop() || paths[0]) : ''
+      if (paths.length) file = paths[0]
     }
-    const ann: Announcement = { id: 'a' + Date.now(), name, file, dur: '—' }
-    update('announcements', [...state.announcements, ann])
+    const ann: Announcement = {
+      id: 'a' + Date.now(), name,
+      file: file.split(/[/\\]/).pop() || file,
+      dur: '0:00'
+    }
+    const next = [...state.announcements, ann]
+    update('announcements', next)
     return ann
   }, [state.announcements, update])
 
-  return { state, update, isDirty, saving, lastSaved, save, getPl, getAnn, plUsedIn, annUsedIn, addPlaylist, addAnnouncement }
+  return {
+    state, update, dirty, lastSaved, saveAll,
+    getPl, getAnn, plUsedIn, annUsedIn,
+    addPlaylist, addFilesToPlaylist, addFolderToPlaylist, addAnnouncement
+  }
 }
