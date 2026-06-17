@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
-import { Playlist, AudioFile, COLORS } from '../types'
+import { Playlist, AudioFile } from '../types'
+import { getThemeColors } from './ThemeColor'
 
 interface Props {
   playlist: Playlist
@@ -10,6 +11,7 @@ interface Props {
   onDelete: () => void
   onAddFolder: () => void
   onAddFiles: () => void
+  isDark?: boolean
 }
 
 const isElectron = typeof window !== 'undefined' && !!window.bmm
@@ -18,11 +20,11 @@ const TRANSITIONS: Record<string, string> = {
   pause1: 'Пауза 1с', none: 'Без перехода'
 }
 
-export default function PlaylistEditor({ playlist: pl, locked, lockedIn, onChange, onCopy, onDelete, onAddFolder, onAddFiles }: Props) {
+export default function PlaylistEditor({ playlist: pl, locked, lockedIn, onChange, onCopy, onDelete, onAddFolder, onAddFiles, isDark = true }: Props) {
   const [open, setOpen] = useState(false)
   const [playingIdx, setPlayingIdx] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState(false)
-  const cc = COLORS[pl.color]
+  const cc = getThemeColors(isDark, pl.color)
 
   function removeTrack(i: number) {
     onChange({ files: pl.files.filter((_, fi) => fi !== i) })

@@ -1,11 +1,10 @@
-.block { background: var(--bg2); border: 0.5px solid var(--bd); border-radius: var(--r2); margin-bottom: 6px; overflow: hidden; transition: border-color 0.15s; }
+.block { background: var(--bg2); border: 0.5px solid var(--bd); border-radius: var(--r2); margin-bottom: 6px; overflow: hidden; transition: border-color 0.15s, background 0.15s; }
 .today { border-color: var(--pu2); }
-.holiday.block { border-color: var(--amBg); }
-.holiday.block:has(.togOn), .holiday.block:has(.togAmber) { }
-.off { opacity: 0.6; }
+.holiday { border-left: 3px solid var(--am); }
+.off { opacity: 0.55; }
 
-.header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; user-select: none; }
-.header:hover { background: rgba(128,128,128,0.03); }
+.header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; user-select: none; transition: background 0.1s; }
+.header:hover { background: var(--bg3); }
 
 .tog { width: 32px; height: 17px; border-radius: 9px; background: var(--bg4); border: 0.5px solid var(--bd2); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.18s; }
 .togOn { background: var(--pu2); }
@@ -17,57 +16,54 @@
 .meta { display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
 .dim { font-size: 11px; color: var(--text3); }
 .warn { font-size: 10px; color: var(--amL); background: var(--amBg); border: 0.5px solid var(--am2); padding: 2px 6px; border-radius: 10px; }
-.warnBadge { font-size: 10px; color: var(--amL); background: var(--amBg); border: 0.5px solid var(--am2); padding: 2px 7px; border-radius: 10px; }
-
-.tChip { font-size: 11px; color: var(--text2); background: var(--bg3); border: 0.5px solid var(--bd); padding: 2px 8px; border-radius: 5px; }
-.plChip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 500; border: 0.5px solid var(--bd2); }
+.warnBadge { font-size: 12px; color: var(--am); }
+.tChip { font-size: 11px; color: var(--text2); background: var(--bg3); border: 0.5px solid var(--bd2); padding: 2px 8px; border-radius: 5px; }
+.plChip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; border: 0.5px solid; transition: all 0.12s; }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .annDots { display: flex; gap: 3px; align-items: center; }
 .annDot { width: 5px; height: 5px; border-radius: 50%; background: var(--pu); }
-.todayBadge { font-size: 10px; color: var(--puL); background: var(--pu3); padding: 2px 7px; border-radius: 4px; }
+.todayBadge { font-size: 10px; color: var(--puL); background: var(--pu3); padding: 2px 7px; border-radius: 4px; border: 0.5px solid var(--pu2); }
 .chv { font-size: 13px; color: var(--text3); transition: transform 0.18s; margin-left: 4px; }
 .chvOpen { transform: rotate(180deg); }
 
-.body { padding: 0 12px 12px; border-top: 0.5px solid var(--bd); }
+.body { padding: 0 12px 12px; border-top: 0.5px solid var(--bd); background: var(--bg2); }
 .row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid var(--bd); }
 .row:last-child { border-bottom: none; padding-bottom: 0; }
 .rl { font-size: 11px; color: var(--text3); min-width: 80px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .rl i { font-size: 13px; }
 .rowRight { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .ti { background: var(--bg3); border: 0.5px solid var(--bd2); border-radius: 5px; color: var(--text); font-size: 12px; padding: 3px 7px; width: 72px; }
-.di { background: var(--bg3); border: 0.5px solid var(--bd2); border-radius: 5px; color: var(--text); font-size: 12px; padding: 3px 7px; }
 .sep { font-size: 11px; color: var(--text3); }
-.sel { background: var(--bg3); border: 0.5px solid var(--bd2); border-radius: 5px; color: var(--text); font-size: 11px; padding: 3px 6px; outline: none; }
-.secBtn { padding: 3px 9px; border-radius: 5px; border: 0.5px solid var(--bd2); background: var(--bg3); color: var(--text2); font-size: 11px; cursor: pointer; }
-.secBtn:hover { background: var(--bg4); }
+.secBtn { padding: 3px 9px; border-radius: 5px; border: 0.5px solid var(--bd2); background: var(--bg3); color: var(--text2); font-size: 11px; cursor: pointer; transition: all 0.12s; }
+.secBtn:hover { background: var(--bg4); color: var(--text); }
 .secActive { background: var(--pu3); color: var(--puL); border-color: var(--pu2); }
 .plGrid { display: flex; gap: 5px; flex-wrap: wrap; }
 
 .tlWrap { flex: 1; background: var(--bg3); border-radius: 6px; border: 0.5px solid var(--bd); overflow: visible; }
-.ruler { position: relative; height: 18px; border-bottom: 0.5px solid var(--bd); margin-left: 68px; }
+.ruler { position: relative; height: 18px; border-bottom: 0.5px solid var(--bd); margin-left: 68px; background: var(--bg3); }
 .tick { position: absolute; font-size: 9px; color: var(--text3); transform: translateX(-50%); top: 4px; }
-.track { display: flex; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--bd); }
+.track { display: flex; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--bd); background: var(--bg3); }
 .track:last-child { border-bottom: none; }
 .tlLabel { width: 68px; flex-shrink: 0; font-size: 10px; color: var(--text3); padding: 0 6px; display: flex; align-items: center; gap: 3px; }
 .tlLabel i { font-size: 12px; }
 .tlArea { flex: 1; height: 28px; position: relative; margin-right: 6px; }
-.tlFill { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 7px; font-size: 10px; overflow: hidden; white-space: nowrap; }
+.tlFill { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 7px; font-size: 10px; font-weight: 500; overflow: hidden; white-space: nowrap; }
 .nowLine { position: absolute; top: -3px; bottom: -3px; width: 1.5px; background: var(--co); z-index: 5; pointer-events: none; }
 .nowDot { width: 6px; height: 6px; border-radius: 50%; background: var(--co); position: absolute; top: -1px; left: -2px; }
 .nowLabel { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; color: #fff; background: var(--co); padding: 1px 4px; border-radius: 3px; white-space: nowrap; }
-.annBl { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; gap: 3px; padding: 0 5px; font-size: 9px; font-weight: 500; cursor: grab; z-index: 2; overflow: hidden; white-space: nowrap; border: 0.5px solid var(--pu); background: var(--pu3); color: var(--puL); }
+.annBl { position: absolute; top: 1px; bottom: 1px; border-radius: 4px; display: flex; align-items: center; gap: 3px; padding: 0 5px; font-size: 9px; font-weight: 500; cursor: grab; z-index: 2; overflow: hidden; white-space: nowrap; }
 .annBl:active { cursor: grabbing; opacity: 0.6; }
 .annTime { position: absolute; top: -14px; left: 0; font-size: 9px; color: var(--am); white-space: nowrap; pointer-events: none; }
-.dropHint { position: absolute; inset: 2px; border: 1px dashed var(--pu3); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text3); pointer-events: none; }
+.dropHint { position: absolute; inset: 2px; border: 1px dashed var(--bd2); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text3); pointer-events: none; }
 
 .annRow { display: flex; align-items: center; gap: 6px; padding: 5px 7px; background: var(--bg3); border: 0.5px solid var(--bd); border-radius: 5px; margin-top: 3px; }
 .annTi { background: var(--bg4); border: 0.5px solid var(--am); border-radius: 4px; color: var(--am); font-size: 11px; padding: 2px 5px; width: 56px; text-align: center; }
 .vv { font-size: 10px; color: var(--text3); min-width: 24px; }
-.delBtn { width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; color: var(--text3); display: flex; align-items: center; justify-content: center; font-size: 13px; padding: 0; transition: color 0.12s; }
+.delBtn { width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; color: var(--text3); display: flex; align-items: center; justify-content: center; font-size: 13px; padding: 0; cursor: pointer; transition: color 0.12s; }
 .delBtn:hover { color: var(--co); }
-.addAnnBtn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 5px; border: 0.5px solid var(--bd2); background: var(--bg3); color: var(--text2); font-size: 11px; margin-top: 4px; }
+.addAnnBtn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 5px; border: 0.5px solid var(--bd2); background: var(--bg3); color: var(--text2); font-size: 11px; margin-top: 4px; cursor: pointer; transition: all 0.12s; }
 .addAnnBtn:hover { background: var(--bg4); color: var(--text); }
-
-.dangerBtn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 5px; border: 0.5px solid var(--co); background: var(--coBg); color: var(--coL); font-size: 11px; }
+.dangerBtn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 5px; border: 0.5px solid var(--co); background: var(--coBg); color: var(--coL); font-size: 11px; cursor: pointer; }
 .dangerBtn:hover { opacity: 0.8; }
 .conflictRow { display: flex; align-items: flex-start; gap: 7px; padding: 7px 10px; background: var(--coBg); border: 0.5px solid var(--co); border-radius: 5px; margin-top: 8px; font-size: 11px; color: var(--coL); line-height: 1.5; }
+.conflictRow i { color: var(--co); font-size: 13px; flex-shrink: 0; margin-top: 1px; }

@@ -9,6 +9,9 @@
   --co: #D85A30; --coBg: #1C0A06; --coL: #F09595;
   --bd: rgba(255,255,255,0.08); --bd2: rgba(255,255,255,0.14);
   --r: 8px; --r2: 12px;
+  /* Track fill colors - dark theme */
+  --track-fill-opacity: 0.18;
+  --chip-border-opacity: 0.35;
 }
 
 .light {
@@ -19,16 +22,33 @@
   --am: #BA7517; --am2: #633806; --amL: #633806; --amBg: #FAEEDA;
   --co: #993C1D; --coBg: #FAECE7; --coL: #712B13;
   --bd: rgba(0,0,0,0.09); --bd2: rgba(0,0,0,0.16);
+  --track-fill-opacity: 0.12;
+  --chip-border-opacity: 0.5;
 }
 
 html, body, #root {
-  height: 100%; font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+  height: 100%;
+  font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
   font-size: 13px; color: var(--text); background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 
-button { font-family: inherit; cursor: pointer; }
-input, select { font-family: inherit; }
+/* All interactive elements inherit theme */
+button, input, select, textarea {
+  font-family: inherit;
+  color: var(--text);
+}
+
+input[type="time"],
+input[type="date"],
+input[type="text"] {
+  background: var(--bg3);
+  border: 0.5px solid var(--bd2);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 12px;
+}
 
 input[type="range"] {
   -webkit-appearance: none; height: 3px; border-radius: 2px;
@@ -39,7 +59,38 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%; background: var(--pu); cursor: pointer;
 }
 
+select {
+  background: var(--bg3);
+  border: 0.5px solid var(--bd2);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 11px;
+  outline: none;
+}
+
+/* Scrollbars */
 body { scrollbar-width: thin; scrollbar-color: var(--bd2) transparent; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 3px; }
+
+/* Track fill - uses CSS custom properties so it's always theme-aware */
+.tl-fill-track {
+  position: absolute; top: 3px; bottom: 3px; border-radius: 4px;
+  display: flex; align-items: center; padding: 0 7px;
+  font-size: 10px; font-weight: 500;
+  overflow: hidden; white-space: nowrap;
+  border: 0.5px solid;
+}
+
+/* Chip styles that work in both themes */
+.pl-chip-themed {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 6px; font-size: 11px;
+  font-weight: 500; cursor: pointer;
+  border: 0.5px solid;
+  transition: all 0.12s;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }

@@ -189,7 +189,7 @@ export default function App() {
               <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, color: 'var(--teL)', border: '0.5px solid var(--te2)', background: 'var(--teBg)' }}>{activeW} из 7 · {filledW} с объявлениями</span>
             </div>
             {state.week.map((d, i) => (
-              <DayBlock key={i} label={DAYS[i]} data={d} isToday={i === todayIdx}
+              <DayBlock key={i} isDark={state.theme === 'dark'} label={DAYS[i]} data={d} isToday={i === todayIdx}
                 playlists={state.playlists} announcements={state.announcements}
                 nowTime={i === todayIdx ? clock.slice(0, 5) : undefined}
                 warnings={weekConflicts(i)}
@@ -210,7 +210,7 @@ export default function App() {
               </button>
             </div>
             {state.holidays.map((h, i) => (
-              <DayBlock key={h.id}
+              <DayBlock key={h.id} isDark={state.theme === 'dark'}
                 label={h.name + (h.from ? ` · ${h.type === 'range' ? fmtDate(h.from) + '–' + fmtDate(h.to) : fmtDate(h.from)}` : '')}
                 data={h} isHoliday
                 playlists={state.playlists} announcements={state.announcements}
