@@ -1,40 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  AppState, Playlist, Announcement, DaySchedule, Holiday,
-  DEFAULT_WEEK, DEFAULT_EQ, COLORS, AudioFile
-} from '../types'
+import { AppState, Playlist, Announcement, DaySchedule, Holiday, DEFAULT_WEEK, DEFAULT_EQ, COLORS } from '../types'
 
 const isElectron = typeof window !== 'undefined' && !!window.bmm
 
-const DEMO_PLAYLISTS: Playlist[] = [
-  { id: 'pl1', name: 'Утренний джаз', folder: '/music/jazz', color: 0, transition: 'crossfade3', files: [] },
-  { id: 'pl2', name: 'Дневной поп',   folder: '/music/pop',  color: 1, transition: 'crossfade3', files: [] },
-  { id: 'pl3', name: 'Вечерний лаунж',folder: '/music/lounge',color:2, transition: 'pause1',     files: [] },
-]
-
-const DEMO_ANNS: Announcement[] = [
-  { id: 'a1', name: 'Акция недели',  file: 'akcia.mp3',   dur: '0:48' },
-  { id: 'a2', name: 'Часы работы',   file: 'hours.mp3',   dur: '0:32' },
-  { id: 'a3', name: 'Новинки',       file: 'novinki.mp3', dur: '1:05' },
-  { id: 'a4', name: 'Скидки −20%',   file: 'skidki.mp3',  dur: '0:41' },
-]
-
-const DEMO_WEEK: DaySchedule[] = DEFAULT_WEEK.map((d, i) => ({
-  ...d,
-  playlistId: i % 2 === 0 ? 'pl1' : 'pl2',
-  anns: i === 1 ? [{ annId: 'a1', time: '11:30', vol: 20 }, { annId: 'a2', time: '14:00', vol: 20 }]
-      : i === 3 ? [{ annId: 'a4', time: '15:30', vol: 20 }]
-      : i === 4 ? [{ annId: 'a1', time: '10:00', vol: 25 }] : [],
-}))
+const DEFAULT_PLAYLISTS: Playlist[] = []
+const DEFAULT_ANNS: Announcement[] = []
 
 const INITIAL: AppState = {
-  playlists: DEMO_PLAYLISTS,
-  announcements: DEMO_ANNS,
-  week: DEMO_WEEK,
-  holidays: [
-    { id: 'h1', name: 'День России', on: true,  type: 'single', from: '2026-06-12', to: '', start: '11:00', end: '20:00', fadeOut: 20, playlistId: 'pl3', anns: [], open: false },
-    { id: 'h2', name: 'Ид аль-Адха', on: false, type: 'range',  from: '2026-06-06', to: '2026-06-08', start: '10:00', end: '21:00', fadeOut: 20, playlistId: 'pl2', anns: [], open: false },
-  ],
+  playlists: DEFAULT_PLAYLISTS,
+  announcements: DEFAULT_ANNS,
+  week: DEFAULT_WEEK,
+  holidays: [],
   eq: DEFAULT_EQ,
   mode: 'broadcast',
   theme: 'dark',
@@ -44,26 +20,37 @@ async function persist(key: string, val: unknown) {
   if (isElectron) await window.bmm.save(key, val)
 }
 
+// Get audio duration using HTML5 Audio
+function getAudioDuration(filePath: string): Promise<number> {
+  return new Promise(resolve => {
+    const src = filePath.startsWith('file://') ? filePath : `file://${filePath.replace(/\\/g, '/')}`
+    const audio = new Audio(src)
+    audio.addEventListener('loadedmetadata', () => resolve(audio.duration || 0))
+    audio.addEventListener('error', () => resolve(0))
+    setTimeout(() => resolve(0), 5000)
+  })
+}
+
 export function useStore() {
   const [state, setState] = useState<AppState>(INITIAL)
   const [dirty, setDirty] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!isElectron) return
     ;(async () => {
-      const [playlists, anns, week, holidays, eq, prefs] = await Promise.all([
-        window.bmm.load('playlists', DEMO_PLAYLISTS),
-        window.bmm.load('announcements', DEMO_ANNS),
-        window.bmm.load('week', DEMO_WEEK),
-        window.bmm.load('holidays', INITIAL.holidays),
+      const [pls, anns, week, holidays, eq, prefs] = await Promise.all([
+        window.bmm.load('playlists', []),
+        window.bmm.load('announcements', []),
+        window.bmm.load('week', DEFAULT_WEEK),
+        window.bmm.load('holidays', []),
         window.bmm.load('eq', DEFAULT_EQ),
         window.bmm.load('prefs', { mode: 'broadcast', theme: 'dark' }),
       ])
       setState(s => ({
         ...s,
-        playlists: playlists as Playlist[],
+        playlists: pls as Playlist[],
         announcements: anns as Announcement[],
         week: week as DaySchedule[],
         holidays: holidays as Holiday[],
@@ -74,14 +61,12 @@ export function useStore() {
     })()
   }, [])
 
-  // Auto-save every 30 sec when dirty
+  // Auto-save 30s
   useEffect(() => {
     if (!dirty) return
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
-    autoSaveTimer.current = setTimeout(() => {
-      saveAll()
-    }, 30000)
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+    if (autoTimer.current) clearTimeout(autoTimer.current)
+    autoTimer.current = setTimeout(() => saveAll(), 30000)
+    return () => { if (autoTimer.current) clearTimeout(autoTimer.current) }
   }, [dirty, state])
 
   const saveAll = useCallback(async () => {
@@ -106,38 +91,34 @@ export function useStore() {
   const getAnn = (id: string) => state.announcements.find(a => a.id === id)
 
   const plUsedIn = (id: string) => {
-    const days = state.week.filter(d => d.playlistId === id && d.on).map((_, i) => ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i])
+    const days = state.week.filter(d => d.playlistId === id && d.on).map((_, i) => DAYS[i])
     const hols = state.holidays.filter(h => h.playlistId === id && h.on).map(h => h.name)
     return [...days, ...hols]
   }
   const annUsedIn = (id: string) => {
-    const days = state.week.filter(d => d.anns.some(a => a.annId === id)).map((_, i) => ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i])
+    const days = state.week.filter(d => d.anns.some(a => a.annId === id)).map((_, i) => DAYS[i])
     const hols = state.holidays.filter(h => h.anns.some(a => a.annId === id)).map(h => h.name)
     return [...days, ...hols]
   }
 
-  const addPlaylist = useCallback(async (name: string) => {
-    const col = state.playlists.length % COLORS.length
-    let folder = ''
-    let files: AudioFile[] = []
-    if (isElectron) {
-      folder = (await window.bmm.pickFolder()) || ''
-      if (folder) files = await window.bmm.scanFolder(folder)
-    }
-    const pl: Playlist = { id: 'pl' + Date.now(), name, folder, color: col, transition: 'crossfade3', files }
-    const next = [...state.playlists, pl]
-    update('playlists', next)
-    return pl
-  }, [state.playlists, update])
-
-  const addFilesToPlaylist = useCallback(async (plId: string) => {
+  // Add tracks to playlist (copies into app storage)
+  const addTracksToPlaylist = useCallback(async (plId: string, srcPaths: string[]) => {
     if (!isElectron) return
-    const paths = await window.bmm.pickFiles()
-    if (!paths.length) return
-    const newFiles: AudioFile[] = paths.map(p => ({ name: p.split(/[/\\]/).pop()?.replace(/\.[^.]+$/, '') || p, path: p }))
-    const next = state.playlists.map(pl =>
-      pl.id === plId ? { ...pl, files: [...pl.files, ...newFiles.filter(f => !pl.files.find(e => e.path === f.path))] } : pl
-    )
+    const copied = await window.bmm.copyToPlaylist(plId, srcPaths)
+    // Get durations
+    const tracks = await Promise.all(copied.map(async t => ({
+      name: t.name, path: t.path, size: t.size,
+      dur: await getAudioDuration(t.path)
+    })))
+    const next = state.playlists.map(pl => {
+      if (pl.id !== plId) return pl
+      const newTracks = [...pl.tracks, ...tracks.filter(t => !pl.tracks.find(e => e.path === t.path))]
+      return {
+        ...pl, tracks: newTracks,
+        totalDur: newTracks.reduce((s, t) => s + t.dur, 0),
+        totalSize: newTracks.reduce((s, t) => s + t.size, 0),
+      }
+    })
     update('playlists', next)
   }, [state.playlists, update])
 
@@ -145,32 +126,62 @@ export function useStore() {
     if (!isElectron) return
     const folder = await window.bmm.pickFolder()
     if (!folder) return
-    const files = await window.bmm.scanFolder(folder)
-    const next = state.playlists.map(pl =>
-      pl.id === plId ? { ...pl, folder, files } : pl
-    )
+    const copied = await window.bmm.copyFolderToPlaylist(plId, folder)
+    const tracks = await Promise.all(copied.map(async t => ({
+      name: t.name, path: t.path, size: t.size,
+      dur: await getAudioDuration(t.path)
+    })))
+    const next = state.playlists.map(pl => {
+      if (pl.id !== plId) return pl
+      const newTracks = [...pl.tracks, ...tracks.filter(t => !pl.tracks.find(e => e.path === t.path))]
+      return {
+        ...pl, tracks: newTracks,
+        totalDur: newTracks.reduce((s, t) => s + t.dur, 0),
+        totalSize: newTracks.reduce((s, t) => s + t.size, 0),
+      }
+    })
     update('playlists', next)
   }, [state.playlists, update])
 
+  const addPlaylist = useCallback(async (name: string) => {
+    const col = state.playlists.length % COLORS.length
+    const pl: Playlist = { id: 'pl' + Date.now(), name, color: col, transition: 'crossfade3', tracks: [], totalDur: 0, totalSize: 0 }
+    update('playlists', [...state.playlists, pl])
+    return pl
+  }, [state.playlists, update])
+
+  const deletePlaylist = useCallback(async (plId: string) => {
+    if (isElectron) await window.bmm.deletePlaylist(plId)
+    update('playlists', state.playlists.filter(p => p.id !== plId))
+  }, [state.playlists, update])
+
   const addAnnouncement = useCallback(async (name: string) => {
-    let file = name + '.mp3'
+    const id = 'a' + Date.now()
+    let filePath = '', size = 0, dur = 0
     if (isElectron) {
       const paths = await window.bmm.pickFiles()
-      if (paths.length) file = paths[0]
+      if (paths.length) {
+        const result = await window.bmm.copyAnnouncement(id, paths[0])
+        filePath = result.path; size = result.size
+        dur = await getAudioDuration(filePath)
+      }
     }
-    const ann: Announcement = {
-      id: 'a' + Date.now(), name,
-      file: file.split(/[/\\]/).pop() || file,
-      dur: '0:00'
-    }
-    const next = [...state.announcements, ann]
-    update('announcements', next)
+    const ann: Announcement = { id, name, path: filePath, size, dur }
+    update('announcements', [...state.announcements, ann])
     return ann
+  }, [state.announcements, update])
+
+  const deleteAnnouncement = useCallback(async (annId: string) => {
+    if (isElectron) await window.bmm.deleteAnnouncement(annId)
+    update('announcements', state.announcements.filter(a => a.id !== annId))
   }, [state.announcements, update])
 
   return {
     state, update, dirty, lastSaved, saveAll,
     getPl, getAnn, plUsedIn, annUsedIn,
-    addPlaylist, addFilesToPlaylist, addFolderToPlaylist, addAnnouncement
+    addPlaylist, addTracksToPlaylist, addFolderToPlaylist, deletePlaylist,
+    addAnnouncement, deleteAnnouncement,
   }
 }
+
+const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
