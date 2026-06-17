@@ -14,7 +14,8 @@ jobs:
         with:
           node-version: '20'
       - name: Install
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --prefer-offline --no-audit --no-fund
+        timeout-minutes: 15
       - name: Build renderer
         run: npx vite build
       - name: Build main
