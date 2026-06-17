@@ -1,0 +1,39 @@
+{
+  "name": "business-music-manager",
+  "version": "1.0.0",
+  "description": "Business Music Manager by RunBizAI — магазинный аудиоменеджер",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build && tsc --project tsconfig.electron.json",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.runbizai.bmm",
+    "productName": "Business Music Manager",
+    "win": { "target": "nsis" },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1049"
+    },
+    "files": ["dist/**/*", "dist-electron/**/*"],
+    "directories": { "output": "release" }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
