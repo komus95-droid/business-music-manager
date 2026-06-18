@@ -7,14 +7,15 @@ interface Props {
   onToggleTheme(): void;
   snap: number;
   onSnap(snap: number): void;
-  onClearDay(): void;
+  onClear(): void;
+  canClear: boolean;
   canEdit: boolean;
 }
 
 const SNAP_OPTIONS = [1, 5, 15];
 
 /** Шапка: логотип, переключатель Студия/В эфире, шаг привязки, тема. */
-export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClearDay, canEdit }: Props) {
+export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClear, canClear, canEdit }: Props) {
   return (
     <header className="appbar">
       <span className="logo">Commercial <b>Player</b></span>
@@ -40,8 +41,8 @@ export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onCle
             {SNAP_OPTIONS.map((m) => <option key={m} value={m}>{m} мин</option>)}
           </select>
         </label>
-        <button type="button" className="btn" disabled={!canEdit} onClick={onClearDay}>
-          Очистить день
+        <button type="button" className="btn" disabled={!canClear} onClick={onClear}>
+          Очистить
         </button>
         <button
           type="button" className="btn icon" onClick={onToggleTheme}

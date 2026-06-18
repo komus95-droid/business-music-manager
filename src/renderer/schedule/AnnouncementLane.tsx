@@ -1,12 +1,12 @@
 import { useRef } from 'react';
 import type { DragEvent } from 'react';
-import type { WeekDay, Announcement, Id } from '@shared';
+import type { Announcement, Id, DayWindow } from '@shared';
 import { ANNOUNCEMENT_PALETTE } from '@shared';
 import { timeToFrac, fracToTime } from './timeline';
 import { getDrag, dropFrac, setDrag } from './dnd';
 
 interface Props {
-  day: WeekDay;
+  win: DayWindow;
   announcements: Announcement[];
   snap: number;
   canEdit: boolean;
@@ -20,7 +20,7 @@ interface Props {
 const pct = (frac: number) => `${frac * 100}%`;
 
 export function AnnouncementLane(props: Props) {
-  const { day, announcements, snap, canEdit, selectedId } = props;
+  const { win, announcements, snap, canEdit, selectedId } = props;
   const laneRef = useRef<HTMLDivElement>(null);
 
   function handleDrop(e: DragEvent) {
@@ -29,7 +29,7 @@ export function AnnouncementLane(props: Props) {
     if (!canEdit || !laneRef.current) return;
     const p = getDrag(e);
     if (!p || p.kind !== 'announcement') return;
-    const t = fracToTime(day, dropFrac(e, laneRef.current), snap);
+    const t = fracToTime(win, dropFrac(e, laneRef.current), snap);
     if (p.op === 'add') props.onAdd(p.refId, t);
     else props.onMove(p.blockId, t);
   }
@@ -45,7 +45,7 @@ export function AnnouncementLane(props: Props) {
     >
       <span className="lane-label">Объявления</span>
 
-      {day.blocks.filter((b) => b.kind === 'announcement').map((b) => {
+      {win.blocks.filter((b) => b.kind === 'announcement').map((b) => {
         if (b.kind !== 'announcement') return null;
         const an = announcements.find((a) => a.id === b.refId);
         if (!an) return null;
@@ -54,7 +54,7 @@ export function AnnouncementLane(props: Props) {
           <div
             key={b.id}
             className={`pin${sel ? ' sel' : ''}`}
-            style={{ left: pct(timeToFrac(day, b.at)) }}
+            style={{ left: pct(timeToFrac(win, b.at)) }}
             draggable={canEdit}
             onDragStart={(e) => setDrag(e, { op: 'move', kind: 'announcement', blockId: b.id })}
             onClick={(e) => { e.stopPropagation(); props.onSelect(b.id); }}

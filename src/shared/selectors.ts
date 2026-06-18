@@ -297,3 +297,31 @@ export function findHolidayConflicts(holidays: Holiday[]): Array<[Id, Id]> {
   }
   return out;
 }
+
+/** Множество id всех праздников, чьи даты с кем-то пересекаются (для значка ⚠). */
+export function conflictingHolidayIds(holidays: Holiday[]): Set<Id> {
+  const ids = new Set<Id>();
+  for (const [a, b] of findHolidayConflicts(holidays)) {
+    ids.add(a);
+    ids.add(b);
+  }
+  return ids;
+}
+
+/** Праздники, чьи даты пересекаются с праздником `id` (без него самого). */
+export function holidaysConflictingWith(holidays: Holiday[], id: Id): Holiday[] {
+  const self = holidays.find((h) => h.id === id);
+  if (!self) return [];
+  return holidays.filter((o) => o.id !== id && holidaysOverlap(self, o));
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Владелец блоков расписания (день недели ИЛИ праздник)
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Адрес «куда положить/откуда взять блоки». Чат 6 обобщает мутаторы стора и
+ * редактор с `DayId` на этого владельца, чтобы один и тот же редактор шкалы
+ * работал и для дня недели, и для праздника.
+ */
+export type BlockOwner = BlockLocation['owner'];

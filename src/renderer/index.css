@@ -187,3 +187,83 @@ body {
 .player-bar { height: 4px; background: var(--panel2); border-radius: 2px; overflow: hidden; }
 .player-bar span { display: block; height: 100%; background: var(--accent); }
 .player-hint { font-size: 11px; }
+
+/* ── Лента праздников (верх центра) ───────────────────── */
+.holiday-bar {
+  display: flex; align-items: stretch; gap: 8px;
+  margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+}
+.hb-title {
+  font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px;
+  white-space: nowrap; align-self: center;
+}
+.hol-scroll { display: flex; gap: 7px; overflow-x: auto; flex: 1; padding: 1px; min-width: 0; }
+.hol {
+  flex: none; min-width: 132px; max-width: 180px; text-align: left; cursor: pointer;
+  background: var(--panel2); color: var(--text); border: 1px solid transparent;
+  border-radius: 8px; padding: 6px 9px; display: flex; flex-direction: column; gap: 2px;
+}
+.hol:hover { border-color: var(--line2); }
+.hol.sel { border-color: var(--accent); }
+.hol.off { opacity: .65; }
+.hol-name { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hol-name .warn-i { color: #e2a53b; flex: none; }
+.hol-sub { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hol-meta { font-size: 10px; color: var(--muted); }
+.hol-empty { font-size: 11px; color: var(--muted); align-self: center; }
+.hol-add {
+  flex: none; align-self: stretch; min-width: 104px;
+  border: 1px dashed var(--line2); border-radius: 8px; background: transparent;
+  color: var(--accent); font-size: 11px; cursor: pointer; padding: 0 10px;
+}
+.hol-add:hover:not(:disabled) { background: rgba(47, 128, 237, .08); }
+.hol-add:disabled { opacity: .45; cursor: default; }
+
+/* ── Шапка праздника ──────────────────────────────────── */
+.hol-name-in {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--line2);
+  border-radius: 6px; padding: 4px 8px; font-size: 14px; width: 180px;
+}
+.hol-badge {
+  font-size: 10px; padding: 3px 8px; border-radius: 5px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.hol-badge.work { background: rgba(47, 128, 237, .14); color: #7db3f5; }
+.hol-badge.off { background: rgba(235, 87, 87, .14); color: #f08a8a; }
+.hol-del { margin-left: auto; }
+
+.hol-dates {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 9px; color: var(--muted); font-size: 11px;
+}
+.date-sel { display: inline-flex; align-items: center; gap: 3px; }
+.date-sel select {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--line2);
+  border-radius: 6px; padding: 3px 4px; font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.date-sel .sep { color: var(--muted); }
+.period-tg {
+  font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line2); background: var(--panel2); color: var(--muted);
+}
+.period-tg.on { border-color: var(--accent); background: rgba(47, 128, 237, .12); color: var(--text); }
+.period-tg:disabled { opacity: .45; cursor: default; }
+
+.override-note {
+  margin: 0 0 9px; font-size: 11px; color: #d7a44a;
+  background: rgba(226, 165, 59, .1); border: 1px solid rgba(226, 165, 59, .3);
+  border-radius: 8px; padding: 6px 10px;
+}
+.hol-conflict {
+  margin: 0 0 9px; font-size: 11px; color: #e2a53b;
+  background: rgba(226, 165, 59, .1); border: 1px solid rgba(226, 165, 59, .35);
+  border-radius: 8px; padding: 6px 10px;
+}
+
+/* ── Тост ─────────────────────────────────────────────── */
+.flash {
+  position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 50;
+  background: var(--panel2); color: var(--text); border: 1px solid var(--accent);
+  border-radius: 8px; padding: 8px 14px; font-size: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .4);
+}

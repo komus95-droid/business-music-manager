@@ -1,12 +1,12 @@
 import { useRef } from 'react';
 import type { DragEvent } from 'react';
-import type { WeekDay, Playlist, Id, SilenceGap } from '@shared';
+import type { Playlist, Id, SilenceGap, DayWindow } from '@shared';
 import { PLAYLIST_PALETTE, spanMinutes, offsetFromDayStart } from '@shared';
 import { timeToFrac, spanToFrac, fracToTime } from './timeline';
 import { getDrag, dropFrac, setDrag } from './dnd';
 
 interface Props {
-  day: WeekDay;
+  win: DayWindow;
   playlists: Playlist[];
   conflictIds: Set<Id>;
   silence: SilenceGap[];
@@ -22,9 +22,9 @@ interface Props {
 const pct = (frac: number) => `${frac * 100}%`;
 
 export function PlaylistLane(props: Props) {
-  const { day, playlists, conflictIds, silence, snap, canEdit, selectedId } = props;
+  const { win, playlists, conflictIds, silence, snap, canEdit, selectedId } = props;
   const laneRef = useRef<HTMLDivElement>(null);
-  const span = spanMinutes(day.start, day.end);
+  const span = spanMinutes(win.start, win.end);
 
   function handleDrop(e: DragEvent) {
     e.preventDefault();
@@ -32,7 +32,7 @@ export function PlaylistLane(props: Props) {
     if (!canEdit || !laneRef.current) return;
     const p = getDrag(e);
     if (!p || p.kind !== 'playlist') return;
-    const t = fracToTime(day, dropFrac(e, laneRef.current), snap);
+    const t = fracToTime(win, dropFrac(e, laneRef.current), snap);
     if (p.op === 'add') props.onAdd(p.refId, t);
     else props.onMove(p.blockId, t);
   }
@@ -49,8 +49,8 @@ export function PlaylistLane(props: Props) {
       <span className="lane-label">Плейлисты</span>
 
       {silence.map((g, i) => {
-        const left = timeToFrac(day, g.from);
-        const width = spanToFrac(day, g.from, g.to);
+        const left = timeToFrac(win, g.from);
+        const width = spanToFrac(win, g.from, g.to);
         return (
           <div key={`s${i}`} className="silence" style={{ left: pct(left), width: pct(width) }}>
             {spanMinutes(g.from, g.to) >= 30 && <span>тишина</span>}
@@ -58,13 +58,13 @@ export function PlaylistLane(props: Props) {
         );
       })}
 
-      {day.blocks.filter((b) => b.kind === 'playlist').map((b) => {
+      {win.blocks.filter((b) => b.kind === 'playlist').map((b) => {
         if (b.kind !== 'playlist') return null;
         const pl = playlists.find((p) => p.id === b.refId);
         if (!pl) return null;
-        const left = timeToFrac(day, b.start);
-        const width = spanToFrac(day, b.start, b.end);
-        const over = offsetFromDayStart(day.start, b.start) + spanMinutes(b.start, b.end) > span;
+        const left = timeToFrac(win, b.start);
+        const width = spanToFrac(win, b.start, b.end);
+        const over = offsetFromDayStart(win.start, b.start) + spanMinutes(b.start, b.end) > span;
         const sel = selectedId === b.id;
         const conflict = conflictIds.has(b.id);
         return (

@@ -3,7 +3,7 @@ import { DAY_ORDER } from '@shared';
 
 interface Props {
   week: Record<DayId, WeekDay>;
-  currentDayId: DayId;
+  currentDayId: DayId | null;
   onSelect(id: DayId): void;
 }
 
