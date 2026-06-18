@@ -218,6 +218,11 @@ function createWindow(): BrowserWindow {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Electron 28 включает песочницу рендерера по умолчанию, а в песочнице
+      // preload не может require() локальные модули (наш preload импортирует
+      // ../shared/ipc) — из-за этого мост window.api не появлялся и интерфейс
+      // не рисовался. Отключаем песочницу; contextIsolation остаётся включён.
+      sandbox: false,
       webSecurity: false, // разрешить file:// для локального аудио
       // Не тормозить таймеры/аудио-фейды, когда окно свёрнуто (фоновый плеер
       // работает свёрнутым почти всегда). Нужно для плавных переходов движка.
@@ -230,9 +235,6 @@ function createWindow(): BrowserWindow {
   } else {
     win.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
-  // ДИАГНОСТИКА (Чат 10): открываем DevTools и в проде, чтобы видеть Console
-  // (ошибки загрузки ресурсов / скрипта). Убрать после починки чёрного экрана.
-  win.webContents.openDevTools({ mode: 'detach' });
   win.once('ready-to-show', () => win.show());
   return win;
 }

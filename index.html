@@ -4,51 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Commercial Player</title>
-  <!-- ДИАГНОСТИКА (Чат 10): временная панель в окне. Покажет, загрузился ли и
-       выполнился ли бандл. Удаляется после того, как причина чёрного экрана найдена. -->
-  <script>
-  (function(){
-    var logs=[];
-    function panel(){
-      var el=document.getElementById('__diag');
-      if(!el){ el=document.createElement('div'); el.id='__diag';
-        el.style.cssText='position:fixed;top:0;left:0;right:0;max-height:70vh;overflow:auto;z-index:2147483647;'
-          +'background:rgba(8,14,28,.97);color:#e6ebf5;font:13px/1.55 Segoe UI,system-ui,sans-serif;'
-          +'padding:16px 20px;border-bottom:2px solid #2f80ed';
-        (document.body||document.documentElement).appendChild(el); }
-      el.innerHTML='<b style="color:#5a9bff">🛈 ДИАГНОСТИКА Commercial Player</b>'
-        +'<div style="white-space:pre-wrap;margin-top:8px">'+logs.join('\n')+'</div>';
-    }
-    function log(s){ logs.push(s); try{panel();}catch(e){} }
-    window.addEventListener('error',function(e){ log('❌ ERROR: '+(e.message||(e.error&&e.error.message)||e.filename||'?')); });
-    window.addEventListener('unhandledrejection',function(e){ log('❌ REJECT: '+((e.reason&&e.reason.message)||e.reason||'?')); });
-    log('✓ инлайн-JS работает');
-    log('путь окна: '+location.href);
-    document.addEventListener('DOMContentLoaded',function(){
-      var srcs=[].slice.call(document.scripts).map(function(x){return x.src;}).filter(function(u){return /assets\/.+\.js/.test(u);});
-      log('тег бандла в DOM: '+(srcs[0]||'НЕ НАЙДЕН'));
-      if(srcs[0]){
-        fetch(srcs[0]).then(function(r){return r.text();})
-          .then(function(t){ log('✓ файл бандла доступен ('+t.length+' байт)'); })
-          .catch(function(err){ log('❌ файл бандла НЕ загрузить: '+err); });
-      }
-    });
-    setTimeout(function(){
-      log('— через 2 секунды —');
-      log('бандл стартовал: '+(window.__APP_BUNDLE_RAN__===true));
-      log('window.api (мост preload): '+(typeof window.api));
-      var root=document.getElementById('root');
-      var kids=root?root.childElementCount:'(нет #root)';
-      log('#root детей: '+kids);
-      if(typeof kids==='number' && kids>0){
-        log('✅ ПРИЛОЖЕНИЕ ОТРИСОВАЛОСЬ — панель скроется через 4с');
-        setTimeout(function(){var el=document.getElementById('__diag'); if(el) el.remove();},4000);
-      } else {
-        log('⚠ интерфейс НЕ отрисовался — пришли фото этой панели');
-      }
-    },2000);
-  })();
-  </script>
 </head>
 <body>
   <div id="root"></div>
