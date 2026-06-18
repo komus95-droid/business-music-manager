@@ -366,3 +366,59 @@ body {
 .ad-vol input[type=range] { flex: 1; max-width: 280px; accent-color: var(--accent); }
 .ad-vol b { color: var(--text); min-width: 38px; font-variant-numeric: tabular-nums; }
 .pe-preview { margin-top: 14px; }
+
+/* ── Предпрослушивание / Студия (Чат 8) ──────────────────── */
+/* Контейнер дорожек — система координат для плейхеда. */
+.lanes { position: relative; }
+.playhead {
+  position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px);
+  background: var(--accent); box-shadow: 0 0 6px var(--accent);
+  pointer-events: none; z-index: 5;
+}
+.playhead::before {
+  content: ""; position: absolute; top: -2px; left: -3px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+}
+
+/* Транспорт предпрослушки (редактор плейлиста, аудит дня) */
+.mt {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
+  padding: 8px 12px;
+}
+.mt.off { opacity: .55; }
+.mt-pp, .mt-stop {
+  flex: none; width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line2); background: var(--panel); color: var(--text);
+  font-size: 12px; display: grid; place-items: center;
+}
+.mt-pp { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mt-pp:hover:not(:disabled) { filter: brightness(1.08); }
+.mt-stop:hover:not(:disabled) { border-color: var(--accent); }
+.mt-pp:disabled, .mt-stop:disabled { opacity: .5; cursor: not-allowed; }
+.mt-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: center; }
+.mt-scrub { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.mt-scrub:disabled { cursor: not-allowed; }
+.mt-label {
+  font-size: 11px; color: var(--muted); max-width: 220px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mt-hint { font-size: 10px; color: var(--accent); white-space: nowrap; }
+.mt.off .mt-hint { color: var(--danger); }
+
+.day-transport { margin-top: 10px; }
+
+/* ── Живая нижняя полоса плеера (Чат 8) ──────────────────── */
+.pbtn.live { opacity: 1; cursor: pointer; color: var(--text); border: 1px solid var(--line2); }
+.pbtn.live:first-child { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pbtn.live:hover:not(:disabled) { border-color: var(--accent); }
+.pbtn.live:disabled { opacity: .4; cursor: not-allowed; }
+.player-now {
+  flex: 0 1 230px; min-width: 0; font-size: 12px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.player-t { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: center; }
+.player-vol { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+.player-vol input[type=range] { width: 96px; accent-color: var(--accent); }
+.player-vol b { color: var(--text); min-width: 34px; font-variant-numeric: tabular-nums; }
+.player.onair .player-now { color: var(--muted); }

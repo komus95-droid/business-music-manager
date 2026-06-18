@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AppMode, ThemeMode, View, BlockOwner } from '@shared';
 import { conflictingHolidayIds, MAX_HOLIDAYS } from '@shared';
 import { useStore } from './state/useStore';
+import { AudioProvider } from './audio/AudioProvider';
 import { Header } from './components/Header';
 import { DayList } from './components/DayList';
 import { HolidayBar } from './components/HolidayBar';
@@ -58,6 +59,7 @@ export function App() {
   }
 
   return (
+    <AudioProvider audio={store.audio}>
     <div className="app">
       <Header
         mode={mode} onMode={setMode}
@@ -128,7 +130,8 @@ export function App() {
         />
       </div>
 
-      <PlayerBar />
+      <PlayerBar mode={mode} volume={store.audio.volume} onVolume={api.setMasterVolume} />
     </div>
+    </AudioProvider>
   );
 }

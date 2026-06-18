@@ -54,6 +54,9 @@ export interface StoreApi {
   removeAnnouncement(id: Id): void;
   setAnnouncementMeta(id: Id, patch: Partial<Pick<Announcement, 'name' | 'color' | 'volume'>>): void;
   setAnnouncementFile(id: Id, media: ImportedTrack): void;
+
+  // звук (Чат 8) — мастер-громкость нижней полосы плеера, сохраняется в store
+  setMasterVolume(volume: number): void;
 }
 
 /** Импортированный MP3 (результат window.api.importMp3): файл уже в media/. */
@@ -317,6 +320,15 @@ export function useStore(): StoreApi {
     if (old && old !== media.file) void window.api.deleteMedia({ kind: 'announcement', file: old }).catch(() => {});
   }, [mutate]);
 
+  // ── Звук: мастер-громкость (Чат 8) ─────────────────────────────────────
+  // Источник истины для громкости вещания — store.audio.volume. Слайдер в
+  // нижней полосе пишет сюда; AudioProvider применяет новое значение к движку
+  // через applyAudioSettings (Howler.volume). Так громкость переживает рестарт.
+  const setMasterVolume: StoreApi['setMasterVolume'] = useCallback((volume) => {
+    const v = Math.max(0, Math.min(100, Math.round(volume)));
+    mutate((s) => (s.audio.volume === v ? s : { ...s, audio: { ...s.audio, volume: v } }));
+  }, [mutate]);
+
   return {
     store, error,
     setHours, addPlaylistBlock, addAnnouncementBlock,
@@ -324,5 +336,6 @@ export function useStore(): StoreApi {
     addHoliday, removeHoliday, setHolidayMeta,
     addPlaylist, removePlaylist, setPlaylistMeta, addTrack, removeTrack, moveTrack,
     addAnnouncement, removeAnnouncement, setAnnouncementMeta, setAnnouncementFile,
+    setMasterVolume,
   };
 }

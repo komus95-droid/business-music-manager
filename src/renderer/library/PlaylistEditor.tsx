@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Playlist, PersistedStore, PlaylistColor } from '@shared';
 import {
   PLAYLIST_PALETTE, playlistEffectiveSec, isAssetLocked, assetUsage, fmtDuration,
 } from '@shared';
 import type { StoreApi } from '../state/useStore';
+import { useAudio } from '../audio/AudioProvider';
+import { MiniTransport } from '../audio/MiniTransport';
+import { buildPlaylistRequest } from '../audio';
 import { pickAndImport, importDroppedFiles } from './mediaImport';
 import { flash } from '../ui/flash';
 
@@ -32,11 +35,38 @@ const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer.types || []).includ
 export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }: Props) {
   const [dz, setDz] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { engine, playback } = useAudio();
 
   const locked = isAssetLocked(store, pl.id);
   // ro — нельзя менять состав/мету (либо эфир, либо ассет уже в расписании)
   const ro = !canEdit || locked;
   const effSec = playlistEffectiveSec(pl, store.audio);
+
+  // ── Предпрослушивание (Чат 8) ──────────────────────────────────────────
+  // Слушать можно даже запертый плейлист (lock запрещает только правку).
+  // Нельзя — только в эфире и когда нет треков.
+  const active = playback.status !== 'idle' && playback.playlistId === pl.id;
+  const playing = active && playback.status === 'playing';
+  const canPreview = canEdit && pl.tracks.length > 0;
+
+  function playPause() {
+    if (!canPreview) return;
+    if (active) {
+      if (playing) engine.pause();
+      else engine.resume();
+    } else {
+      engine.playPlaylist(buildPlaylistRequest(store.settings.mediaPath, pl, { loop: true }));
+    }
+  }
+
+  // Оборвать предпрослушку при уходе с плейлиста, при входе в эфир и на размонтаже.
+  useEffect(() => {
+    const id = pl.id;
+    return () => { if (engine.getState().playlistId === id) engine.stop(); };
+  }, [pl.id, engine]);
+  useEffect(() => {
+    if (!canEdit && engine.getState().playlistId === pl.id) engine.stop();
+  }, [canEdit, engine, pl.id]);
 
   async function importViaDialog() {
     if (ro || busy) return;
@@ -153,9 +183,22 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
         </div>
       )}
 
-      <p className="onair-note pe-preview" role="status">
-        ▶ Предпрослушивание плейлиста появится в режиме «Студия» (Чат 8).
-      </p>
+      <div className="pe-preview">
+        <MiniTransport
+          playing={playing}
+          disabled={!canPreview}
+          positionSec={active ? playback.positionSec : 0}
+          durationSec={active ? playback.durationSec : effSec}
+          seekable={active}
+          onPlayPause={playPause}
+          onStop={active ? () => engine.stop() : undefined}
+          onSeek={(s) => engine.seek(s)}
+          label={active
+            ? `Трек ${playback.trackIndex + 1}/${playback.trackCount} · ${playback.trackName ?? ''}`
+            : `${pl.tracks.length} трек(ов)`}
+          hint={!canEdit ? '🔴 эфир' : (pl.tracks.length === 0 ? 'нет треков' : undefined)}
+        />
+      </div>
     </section>
   );
 }

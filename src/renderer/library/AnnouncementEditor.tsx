@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Announcement, PersistedStore, AnnouncementColor } from '@shared';
 import {
   ANNOUNCEMENT_PALETTE, isAssetLocked, assetUsage, fmtDuration,
 } from '@shared';
 import type { StoreApi } from '../state/useStore';
+import { useAudio } from '../audio/AudioProvider';
+import { buildAnnouncementRequest } from '../audio';
 import { pickAndImport, importDroppedFiles } from './mediaImport';
 import { flash } from '../ui/flash';
 
@@ -32,9 +34,30 @@ const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer.types || []).includ
 export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDeleted }: Props) {
   const [dz, setDz] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { engine, playback } = useAudio();
 
   const locked = isAssetLocked(store, a.id);
   const ro = !canEdit || locked;
+
+  // ── Предпрослушивание (Чат 8) ──────────────────────────────────────────
+  // Объявление = overlay с дакингом, без перемотки позиции — поэтому play/stop.
+  // Слушать можно и запертое; нельзя — в эфире и без файла.
+  const active = !!playback.announcementName && playback.announcementName === a.name && playback.ducked;
+  const canPreview = canEdit && !!a.file;
+
+  function toggle() {
+    if (!canPreview) return;
+    if (active) engine.stop();
+    else engine.playAnnouncement(buildAnnouncementRequest(store.settings.mediaPath, a));
+  }
+
+  useEffect(() => {
+    const name = a.name;
+    return () => { if (engine.getState().announcementName === name) engine.stop(); };
+  }, [a.id, a.name, engine]);
+  useEffect(() => {
+    if (!canEdit && engine.getState().announcementName === a.name) engine.stop();
+  }, [canEdit, engine, a.name]);
 
   function applyFirst(file: { name: string; durationSec: number; file: string } | undefined): boolean {
     if (!file) return false;
@@ -133,9 +156,20 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
         <b>{a.volume}%</b>
       </div>
 
-      <p className="onair-note pe-preview" role="status">
-        ▶ Прослушивание объявления появится в режиме «Студия» (Чат 8).
-      </p>
+      <div className="pe-preview">
+        <div className={`mt${!canPreview ? ' off' : ''}`} role="group" aria-label="Прослушивание объявления">
+          <button
+            type="button" className="mt-pp" disabled={!canPreview}
+            aria-label={active ? 'Стоп' : 'Прослушать'} title={active ? 'Стоп' : 'Прослушать'}
+            onClick={toggle}
+          >{active ? '■' : '►'}</button>
+          <span className="mt-time">{fmtDuration(a.durationSec)}</span>
+          <span className="mt-label">
+            {active ? 'играет…' : (a.file ? `громкость ${a.volume}%` : 'нет файла')}
+          </span>
+          {!canEdit && <span className="mt-hint">🔴 эфир</span>}
+        </div>
+      </div>
     </section>
   );
 }
