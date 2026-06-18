@@ -9,6 +9,7 @@
     "build:renderer": "vite build",
     "build": "npm run build:renderer && npm run build:main",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test": "npm run build:main && node test/smoke.cjs",
     "dist": "npm run build && electron-builder"
   },
   "build": {
