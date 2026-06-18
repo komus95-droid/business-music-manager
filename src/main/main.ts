@@ -219,6 +219,9 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false, // разрешить file:// для локального аудио
+      // Не тормозить таймеры/аудио-фейды, когда окно свёрнуто (фоновый плеер
+      // работает свёрнутым почти всегда). Нужно для плавных переходов движка.
+      backgroundThrottling: false,
     },
   });
 
