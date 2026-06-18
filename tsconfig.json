@@ -1,10 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2020", "lib": ["ES2020","DOM","DOM.Iterable"],
-    "module": "ESNext", "moduleResolution": "bundler",
-    "jsx": "react-jsx", "strict": true,
-    "skipLibCheck": true, "noEmit": true,
-    "allowImportingTsExtensions": true, "resolveJsonModule": true
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared": ["src/shared/index.ts"],
+      "@shared/*": ["src/shared/*"]
+    }
   },
   "include": ["src/renderer"]
 }

@@ -1,16 +1,19 @@
 {
   "name": "business-music-manager",
   "version": "1.0.0",
-  "description": "Business Music Manager by RunBizAI — магазинный аудиоменеджер",
-  "main": "dist-electron/main.js",
+  "description": "Commercial Player by RunBizAi — управление фоновой музыкой и объявлениями",
+  "main": "dist-electron/main/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build && tsc --project tsconfig.electron.json",
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && tsc -p tsconfig.electron.json && electron .\"",
+    "build:main": "tsc -p tsconfig.electron.json",
+    "build:renderer": "vite build",
+    "build": "npm run build:renderer && npm run build:main",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "dist": "npm run build && electron-builder"
   },
   "build": {
-    "appId": "com.runbizai.bmm",
-    "productName": "Business Music Manager",
+    "appId": "com.runbizai.commercialplayer",
+    "productName": "Commercial Player",
     "win": {
       "target": "nsis"
     },

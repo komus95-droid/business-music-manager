@@ -10,3 +10,4 @@ export * from './app';
 export * from './settings';
 export * from './store';
 export * from './selectors';
+export * from './ipc';
