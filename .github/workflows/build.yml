@@ -1,32 +1,86 @@
-name: Build BMM
+name: Build Commercial Player
 
+# Собираем ТОЛЬКО ветку rebuild (новая версия). main (старая) не трогаем.
+# Тег v* дополнительно публикует GitHub Release со скачиваемым .exe.
 on:
   push:
-    branches: [main]
+    branches: [rebuild]
+    tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: write   # требуется для создания GitHub Release по тегу
 
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      # ВАЖНО: npm ci НЕ используем — package-lock.json рассинхронизирован
+      # с package.json (нет electron-builder-squirrel-windows). install --legacy-peer-deps это терпит.
       - name: Install
-        run: npm install --legacy-peer-deps --prefer-offline --no-audit --no-fund
+        run: npm install --legacy-peer-deps --no-audit --no-fund
         timeout-minutes: 15
-      - name: Build renderer
+
+      - name: Typecheck (renderer + electron)
+        run: npm run typecheck
+
+      - name: Build renderer (Vite)
         run: npx vite build
-      - name: Build main
+
+      - name: Build main (tsc)
         run: npx tsc --project tsconfig.electron.json
-      - name: Package
+
+      - name: Package NSIS .exe (electron-builder)
         run: npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload
+
+      - name: Stamp branch + commit into filename
+        id: stamp
+        shell: pwsh
+        run: |
+          $ver = node -p "require('./package.json').version"
+          $sha = "${{ github.sha }}".Substring(0,7)
+          $ref = "${{ github.ref_name }}"
+          $exe = Get-ChildItem release -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { Write-Error "Установщик .exe не найден в release/"; exit 1 }
+          $new = "Commercial-Player-Setup-$ver-$ref-$sha.exe"
+          Rename-Item -Path $exe.FullName -NewName $new
+          "exe=$new"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sha=$sha"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          # Сводка в интерфейсе Actions — сразу видно, ЧТО именно собрано
+          "## ✅ Commercial Player собран"  | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Параметр | Значение |"         | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "|---|---|"                       | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Версия | $ver |"               | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Ветка / тег | $ref |"          | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Коммит | $sha |"               | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "| Файл | $new |"                 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BusinessMusicManager-Windows
+          name: CommercialPlayer-${{ github.ref_name }}-${{ steps.stamp.outputs.sha }}
           path: release/*.exe
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Create GitHub Release (только при пуше тега v*)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.exe
+          name: Commercial Player ${{ github.ref_name }}
+          body: |
+            Автосборка Commercial Player (ветка rebuild).
+            Коммит: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

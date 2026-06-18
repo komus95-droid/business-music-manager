@@ -14,20 +14,27 @@
   "build": {
     "appId": "com.runbizai.commercialplayer",
     "productName": "Commercial Player",
+    "artifactName": "Commercial-Player-Setup-${version}.${ext}",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "language": "1049"
+      "language": "1049",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "shortcutName": "Commercial Player"
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
     ],
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     }
   },
   "devDependencies": {
