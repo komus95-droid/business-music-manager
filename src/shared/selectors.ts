@@ -8,6 +8,7 @@ import type { AudioSettings } from './audio';
 import type { HHMM } from './time';
 import {
   hhmmToMin, spanMinutes, addMinutes, isOvernight, ddmmToOrdinal,
+  offsetFromDayStart,
 } from './time';
 
 /**
@@ -160,6 +161,96 @@ export function findPlaylistOverlaps(
 export interface SilenceGap {
   from: HHMM;
   to: HHMM;
+}
+
+/** Структурный минимум окна (день недели или праздник): часы + блоки. */
+export interface DayWindow {
+  start: HHMM;
+  end: HHMM;
+  blocks: ScheduleBlock[];
+}
+
+/**
+ * Промежутки рабочего дня [start, end], НЕ покрытые ни одним блоком плейлиста
+ * (объявления — точечные, покрытием не считаются). Считается в кадре «смещение
+ * от start», поэтому корректно для овернайта. Блоки, выходящие за конец дня,
+ * клипуются окном. Подходит и для WeekDay, и для Holiday (структурный тип).
+ */
+export function findSilenceGaps(day: DayWindow): SilenceGap[] {
+  const span = spanMinutes(day.start, day.end);
+  if (span <= 0) return [];
+
+  const covered = day.blocks
+    .filter((b): b is PlaylistBlock => b.kind === 'playlist')
+    .map((b): [number, number] => {
+      const s = offsetFromDayStart(day.start, b.start);
+      return [Math.max(0, s), Math.min(span, s + spanMinutes(b.start, b.end))];
+    })
+    .filter(([s, e]) => e > s)
+    .sort((a, b) => a[0] - b[0]);
+
+  const gaps: SilenceGap[] = [];
+  let cursor = 0;
+  for (const [s, e] of covered) {
+    if (s > cursor) {
+      gaps.push({ from: addMinutes(day.start, cursor), to: addMinutes(day.start, s) });
+    }
+    cursor = Math.max(cursor, e);
+  }
+  if (cursor < span) {
+    gaps.push({ from: addMinutes(day.start, cursor), to: addMinutes(day.start, span) });
+  }
+  return gaps;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Авто-сдвиг блока плейлиста к ближайшему свободному старту
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Подобрать старт блока плейлиста как можно ближе к `desired`, чтобы он не
+ * конфликтовал с уже стоящими блоками (наезд > fadeOverlap = конфликт; наезд
+ * ≤ fadeOverlap трактуется как кроссфейд и допускается).
+ *
+ * Решение Чата 5: блок МОЖЕТ выходить за конец рабочего дня (правый край не
+ * клампится) — затухание конца дня в эфире само обрежет хвост. Слева старт не
+ * раньше начала дня. При перемещении существующего блока передайте его id в
+ * `exceptId`, чтобы он не «конфликтовал сам с собой».
+ */
+export function resolvePlaylistStart(
+  day: DayWindow,
+  desired: HHMM,
+  pl: Playlist,
+  audio: AudioSettings,
+  exceptId?: Id,
+): HHMM {
+  const len = Math.round(playlistEffectiveSec(pl, audio) / 60);
+  const fade = audio.fadeOverlap / 60; // допустимый нахлёст в минутах
+
+  const occ = day.blocks
+    .filter((b): b is PlaylistBlock => b.kind === 'playlist' && b.id !== exceptId)
+    .map((b) => {
+      const s = offsetFromDayStart(day.start, b.start);
+      return { s, e: s + spanMinutes(b.start, b.end) };
+    });
+
+  const isFree = (off: number): boolean =>
+    off >= 0 && occ.every((o) => off + len <= o.s + fade || off >= o.e - fade);
+
+  const desiredOff = offsetFromDayStart(day.start, desired);
+  if (isFree(desiredOff)) return desired;
+
+  // кандидаты: вплотную после каждого блока (o.e) и вплотную перед ним (o.s − len)
+  const candidates: number[] = [];
+  for (const o of occ) {
+    candidates.push(o.e);
+    candidates.push(o.s - len);
+  }
+  const free = candidates.filter((c) => c >= 0 && isFree(c));
+  if (free.length === 0) return desired; // запас прочности (после последнего блока всегда свободно)
+
+  free.sort((a, b) => Math.abs(a - desiredOff) - Math.abs(b - desiredOff));
+  return addMinutes(day.start, free[0]);
 }
 
 // ──────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,76 @@
+import { useRef } from 'react';
+import type { DragEvent } from 'react';
+import type { WeekDay, Announcement, Id } from '@shared';
+import { ANNOUNCEMENT_PALETTE } from '@shared';
+import { timeToFrac, fracToTime } from './timeline';
+import { getDrag, dropFrac, setDrag } from './dnd';
+
+interface Props {
+  day: WeekDay;
+  announcements: Announcement[];
+  snap: number;
+  canEdit: boolean;
+  selectedId: Id | null;
+  onSelect(id: Id | null): void;
+  onAdd(refId: Id, time: ReturnType<typeof fracToTime>): void;
+  onMove(blockId: Id, time: ReturnType<typeof fracToTime>): void;
+  onRemove(blockId: Id): void;
+}
+
+const pct = (frac: number) => `${frac * 100}%`;
+
+export function AnnouncementLane(props: Props) {
+  const { day, announcements, snap, canEdit, selectedId } = props;
+  const laneRef = useRef<HTMLDivElement>(null);
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    laneRef.current?.classList.remove('drop');
+    if (!canEdit || !laneRef.current) return;
+    const p = getDrag(e);
+    if (!p || p.kind !== 'announcement') return;
+    const t = fracToTime(day, dropFrac(e, laneRef.current), snap);
+    if (p.op === 'add') props.onAdd(p.refId, t);
+    else props.onMove(p.blockId, t);
+  }
+
+  return (
+    <div
+      ref={laneRef}
+      className="lane lane-an"
+      onDragOver={(e) => { if (canEdit) { e.preventDefault(); laneRef.current?.classList.add('drop'); } }}
+      onDragLeave={() => laneRef.current?.classList.remove('drop')}
+      onDrop={handleDrop}
+      onClick={(e) => { if (e.target === laneRef.current) props.onSelect(null); }}
+    >
+      <span className="lane-label">Объявления</span>
+
+      {day.blocks.filter((b) => b.kind === 'announcement').map((b) => {
+        if (b.kind !== 'announcement') return null;
+        const an = announcements.find((a) => a.id === b.refId);
+        if (!an) return null;
+        const sel = selectedId === b.id;
+        return (
+          <div
+            key={b.id}
+            className={`pin${sel ? ' sel' : ''}`}
+            style={{ left: pct(timeToFrac(day, b.at)) }}
+            draggable={canEdit}
+            onDragStart={(e) => setDrag(e, { op: 'move', kind: 'announcement', blockId: b.id })}
+            onClick={(e) => { e.stopPropagation(); props.onSelect(b.id); }}
+            title={`${an.name} · ${b.at}`}
+          >
+            <span className="dot" style={{ background: ANNOUNCEMENT_PALETTE[an.color] }} />
+            <span className="lbl">{an.name} · {b.at}</span>
+            {sel && canEdit && (
+              <button
+                type="button" className="bx" aria-label="Удалить объявление"
+                onClick={(e) => { e.stopPropagation(); props.onRemove(b.id); }}
+              >×</button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

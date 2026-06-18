@@ -1,38 +1,62 @@
 import { useEffect, useState } from 'react';
-import type { PersistedStore } from '@shared';
-import { DAY_ORDER } from '@shared';
+import type { AppMode, ThemeMode, View, DayId } from '@shared';
+import { useStore } from './state/useStore';
+import { Header } from './components/Header';
+import { DayList } from './components/DayList';
+import { PlayerBar } from './components/PlayerBar';
+import { LibraryPanel } from './library/LibraryPanel';
+import { DayEditor } from './schedule/DayEditor';
+import { SNAP_DEFAULT } from './schedule/timeline';
 
 /**
- * Временный плейсхолдер (Чат 3). Проверяет, что мост window.api работает:
- * грузит store.json и показывает сводку. Полноценный UI собирается в чатах
- * по дизайну (левая колонка / шкала / библиотека / плеер).
+ * Шелл приложения (Чат 5). Раскладка из утверждённого референса:
+ * шапка / [дни | редактор дня | библиотека] / плеер.
+ *
+ * Редактор расписания активен в Студии. В режиме «В эфире» правка заблокирована
+ * (автовещание собирается в Чате 9) — пока это визуальная блокировка.
  */
 export function App() {
-  const [store, setStore] = useState<PersistedStore | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const api = useStore();
+  const [mode, setMode] = useState<AppMode>('studio');
+  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [view, setView] = useState<View>({ type: 'day', id: 'mon' });
+  const [snap, setSnap] = useState<number>(SNAP_DEFAULT);
 
-  useEffect(() => {
-    window.api
-      .loadStore()
-      .then(setStore)
-      .catch((e) => setError(String(e)));
-  }, []);
+  useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
 
-  if (error) return <div className="card error">Ошибка загрузки: {error}</div>;
-  if (!store) return <div className="card">Загрузка store.json…</div>;
+  if (api.error) return <div className="boot error">Ошибка загрузки: {api.error}</div>;
+  if (!api.store) return <div className="boot">Загрузка…</div>;
+
+  const store = api.store;
+  const dayId: DayId = view.type === 'day' ? view.id : 'mon';
+  const canEdit = mode === 'studio';
 
   return (
-    <div className="card">
-      <h1>Commercial Player by RunBizAi</h1>
-      <p className="muted">Чат 3 — main process + IPC. Мост работает, store загружен.</p>
-      <dl>
-        <div><dt>schemaVersion</dt><dd>{store.schemaVersion}</dd></div>
-        <div><dt>дней в неделе</dt><dd>{DAY_ORDER.length}</dd></div>
-        <div><dt>плейлистов</dt><dd>{store.playlists.length}</dd></div>
-        <div><dt>объявлений</dt><dd>{store.announcements.length}</dd></div>
-        <div><dt>праздников</dt><dd>{store.holidays.length}</dd></div>
-        <div><dt>mediaPath</dt><dd className="path">{store.settings.mediaPath || '—'}</dd></div>
-      </dl>
+    <div className="app">
+      <Header
+        mode={mode} onMode={setMode}
+        theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        snap={snap} onSnap={setSnap}
+        onClearDay={() => api.clearDay(dayId)}
+        canEdit={canEdit}
+      />
+
+      <div className="app-body">
+        <DayList week={store.week} currentDayId={dayId} onSelect={(id) => setView({ type: 'day', id })} />
+
+        <main className="app-center">
+          {!canEdit && (
+            <p className="onair-note" role="status">
+              Идёт эфир — редактирование расписания недоступно (автовещание — Чат 9).
+            </p>
+          )}
+          <DayEditor day={store.week[dayId]} store={store} api={api} snap={snap} canEdit={canEdit} />
+        </main>
+
+        <LibraryPanel store={store} canDrag={canEdit} />
+      </div>
+
+      <PlayerBar />
     </div>
   );
 }
