@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   PersistedStore, Id, HHMM, WeekDay, Holiday, BlockOwner,
   PlaylistBlock, AnnouncementBlock, ScheduleBlock,
-  Playlist, Announcement,
+  Playlist, Announcement, AudioSettings,
 } from '@shared';
 import {
   newId, playlistBlockEnd, resolvePlaylistStart,
@@ -57,6 +57,9 @@ export interface StoreApi {
 
   // звук (Чат 8) — мастер-громкость нижней полосы плеера, сохраняется в store
   setMasterVolume(volume: number): void;
+  // звук (Чат 10) — панель настроек: дакинг/фейд/сглаживание/EQ. Любой патч
+  // store.audio применяется движком на лету (AudioProvider → applyAudioSettings).
+  patchAudio(patch: Partial<AudioSettings>): void;
 }
 
 /** Импортированный MP3 (результат window.api.importMp3): файл уже в media/. */
@@ -329,6 +332,13 @@ export function useStore(): StoreApi {
     mutate((s) => (s.audio.volume === v ? s : { ...s, audio: { ...s.audio, volume: v } }));
   }, [mutate]);
 
+  // Панель настроек звука (нижняя полоса прототипа): дакинг/фейд/сглаживание/EQ.
+  // Пишем в store.audio; AudioProvider применяет на лету. Меняя fadeOverlap, мы
+  // влияем и на математику длины блоков плейлиста — App перерисуется и шкала тоже.
+  const patchAudio: StoreApi['patchAudio'] = useCallback((patch) => {
+    mutate((s) => ({ ...s, audio: { ...s.audio, ...patch } }));
+  }, [mutate]);
+
   return {
     store, error,
     setHours, addPlaylistBlock, addAnnouncementBlock,
@@ -337,5 +347,6 @@ export function useStore(): StoreApi {
     addPlaylist, removePlaylist, setPlaylistMeta, addTrack, removeTrack, moveTrack,
     addAnnouncement, removeAnnouncement, setAnnouncementMeta, setAnnouncementFile,
     setMasterVolume,
+    patchAudio,
   };
 }

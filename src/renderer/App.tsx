@@ -9,7 +9,7 @@ import { OnAirCard } from './onair/OnAirCard';
 import { Header } from './components/Header';
 import { DayList } from './components/DayList';
 import { HolidayBar } from './components/HolidayBar';
-import { PlayerBar } from './components/PlayerBar';
+import { ControlsPanel } from './components/ControlsPanel';
 import { LibraryPanel } from './library/LibraryPanel';
 import { PlaylistEditor } from './library/PlaylistEditor';
 import { AnnouncementEditor } from './library/AnnouncementEditor';
@@ -154,7 +154,7 @@ function AppShell({ api, store }: ShellProps) {
         />
       </div>
 
-      <PlayerBar mode={mode} volume={store.audio.volume} onVolume={api.setMasterVolume} />
+      <ControlsPanel mode={mode} audio={store.audio} onVolume={api.setMasterVolume} onPatch={api.patchAudio} />
     </div>
   );
 }
