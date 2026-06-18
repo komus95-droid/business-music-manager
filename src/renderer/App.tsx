@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { AppMode, ThemeMode, View, BlockOwner } from '@shared';
+import type { AppMode, ThemeMode, View, BlockOwner, PersistedStore } from '@shared';
 import { conflictingHolidayIds, MAX_HOLIDAYS } from '@shared';
 import { useStore } from './state/useStore';
-import { AudioProvider } from './audio/AudioProvider';
+import type { StoreApi } from './state/useStore';
+import { AudioProvider, useAudio } from './audio/AudioProvider';
+import { useOnAir } from './onair/useOnAir';
+import { OnAirCard } from './onair/OnAirCard';
 import { Header } from './components/Header';
 import { DayList } from './components/DayList';
 import { HolidayBar } from './components/HolidayBar';
@@ -16,12 +19,35 @@ import { SNAP_DEFAULT } from './schedule/timeline';
 import { flash } from './ui/flash';
 
 /**
- * Шелл приложения. Раскладка референса: шапка / [дни | центр | библиотека] /
- * плеер. Центр сверху — лента праздников, ниже — редактор дня ИЛИ праздника.
- * В режиме «В эфире» правка заблокирована (автовещание — Чат 9).
+ * Точка входа: грузит store и оборачивает приложение в единственный аудио-движок.
+ * Вся рантайм-логика (режим, выбранный экран, эфир) — в AppShell, ВНУТРИ
+ * AudioProvider, чтобы и автовещание (Чат 9), и предпрослушка (Чат 8) делили
+ * один и тот же движок и одно состояние.
  */
 export function App() {
   const api = useStore();
+  if (api.error) return <div className="boot error">Ошибка загрузки: {api.error}</div>;
+  if (!api.store) return <div className="boot">Загрузка…</div>;
+  return (
+    <AudioProvider audio={api.store.audio}>
+      <AppShell api={api} store={api.store} />
+    </AudioProvider>
+  );
+}
+
+interface ShellProps {
+  api: StoreApi;
+  store: PersistedStore;
+}
+
+/**
+ * Шелл приложения. Раскладка референса: шапка / [дни | центр | библиотека] /
+ * плеер. Центр сверху — лента праздников, ниже — редактор дня ИЛИ праздника.
+ * В режиме «В эфире» правка заблокирована, а автовещание ведёт планировщик
+ * (useOnAir) по реальным часам; статус показывает карточка эфира в шапке.
+ */
+function AppShell({ api, store }: ShellProps) {
+  const { engine } = useAudio();
   const [mode, setMode] = useState<AppMode>('studio');
   const [theme, setTheme] = useState<ThemeMode>('dark');
   const [view, setView] = useState<View>({ type: 'day', id: 'mon' });
@@ -29,10 +55,7 @@ export function App() {
 
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
 
-  if (api.error) return <div className="boot error">Ошибка загрузки: {api.error}</div>;
-  if (!api.store) return <div className="boot">Загрузка…</div>;
-
-  const store = api.store;
+  const onair = useOnAir(store, engine, mode === 'onair');
   const canEdit = mode === 'studio';
 
   // праздник из view может быть удалён — тогда откатываемся на понедельник
@@ -59,7 +82,6 @@ export function App() {
   }
 
   return (
-    <AudioProvider audio={store.audio}>
     <div className="app">
       <Header
         mode={mode} onMode={setMode}
@@ -68,6 +90,7 @@ export function App() {
         onClear={() => { if (owner) api.clearBlocks(owner); }}
         canClear={canEdit && owner !== null}
         canEdit={canEdit}
+        extra={<OnAirCard info={onair} />}
       />
 
       <div className="app-body">
@@ -80,7 +103,8 @@ export function App() {
         <main className="app-center">
           {!canEdit && (
             <p className="onair-note" role="status">
-              Идёт эфир — редактирование расписания недоступно (автовещание — Чат 9).
+              Идёт эфир — автовещание по расписанию. Редактирование недоступно;
+              переключитесь в «Студию», чтобы менять расписание и библиотеку.
             </p>
           )}
 
@@ -132,6 +156,5 @@ export function App() {
 
       <PlayerBar mode={mode} volume={store.audio.volume} onVolume={api.setMasterVolume} />
     </div>
-    </AudioProvider>
   );
 }

@@ -8,7 +8,7 @@ import type { AudioSettings } from './audio';
 import type { HHMM } from './time';
 import {
   hhmmToMin, spanMinutes, addMinutes, isOvernight, ddmmToOrdinal,
-  offsetFromDayStart,
+  offsetFromDayStart, ordinalOfDate,
 } from './time';
 
 /**
@@ -325,3 +325,88 @@ export function holidaysConflictingWith(holidays: Holiday[], id: Id): Holiday[] 
  * работал и для дня недели, и для праздника.
  */
 export type BlockOwner = BlockLocation['owner'];
+
+// ──────────────────────────────────────────────────────────────────────────
+// Активное окно эфира: что вещаем ПРЯМО СЕЙЧАС (Чат 9)
+//
+// Праздник перекрывает день недели в свои даты. Дополнительно учитывается
+// «хвост» овернайт-окна предыдущего дня (заведение открыто за полночь): если
+// вчерашнее окно овернайт и текущее время ещё не дошло до его конца — вещает
+// именно оно. Чистая функция (зависит только от store + переданной даты) —
+// планировщик эфира дёргает её каждый тик по реальным часам.
+// ──────────────────────────────────────────────────────────────────────────
+
+/** JS getDay() (0 = воскресенье) → наш DayId. */
+const JS_WEEKDAY_TO_DAYID: readonly DayId[] = [
+  'sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat',
+];
+
+/** Резолвнутое окно вещания: чьё расписание играет + его часы/блоки. */
+export interface ActiveWindow {
+  kind: 'day' | 'holiday';
+  /** DayId дня недели или Holiday.id */
+  id: Id;
+  /** имя дня недели или праздника (для статус-карточки) */
+  label: string;
+  /** окно (часы + блоки) — структурный минимум для шкалы/аудита */
+  win: DayWindow;
+  /** заведение в этот день закрыто (выходной / отключённый праздник) */
+  off: boolean;
+  /** true — это «хвост» овернайт-окна предыдущих суток, дотягивающий за полночь */
+  carriedOver: boolean;
+}
+
+/**
+ * Праздник, активный в указанную дату.
+ *   year указан → только этот конкретный год (разовое событие);
+ *   year нет    → ежегодный, сравниваем по дню года.
+ * Из нескольких подходящих (их даты пересекаются — помечаются ⚠) приоритет
+ * у разового (с годом), затем — первый по списку.
+ */
+export function activeHolidayFor(holidays: Holiday[], date: Date): Holiday | null {
+  const ord = ordinalOfDate(date);
+  const year = date.getFullYear();
+  const matches = holidays.filter((h) => {
+    if (h.year != null && h.year !== year) return false;
+    return holidaySegments(h).some(([from, to]) => ord >= from && ord <= to);
+  });
+  if (matches.length === 0) return null;
+  matches.sort((a, b) => (a.year != null ? 0 : 1) - (b.year != null ? 0 : 1));
+  return matches[0];
+}
+
+/** Базовый резолв на дату БЕЗ учёта овернайт-переноса (праздник → иначе день недели). */
+function resolveBaseWindow(store: PersistedStore, date: Date): ActiveWindow {
+  const hol = activeHolidayFor(store.holidays, date);
+  if (hol) {
+    return {
+      kind: 'holiday', id: hol.id, label: hol.name, off: hol.off, carriedOver: false,
+      win: { start: hol.start, end: hol.end, blocks: hol.blocks },
+    };
+  }
+  const dayId = JS_WEEKDAY_TO_DAYID[date.getDay()];
+  const d = store.week[dayId];
+  return {
+    kind: 'day', id: dayId, label: d.name, off: d.off, carriedOver: false,
+    win: { start: d.start, end: d.end, blocks: d.blocks },
+  };
+}
+
+/**
+ * Что вещаем в момент `date`. Сначала проверяем «хвост» овернайт-окна
+ * предыдущих суток: если вчерашнее окно уходит за полночь (end ≤ start),
+ * не выходной, и текущее время РАНЬШЕ его конца — играет вчерашнее окно
+ * (например суббота 10:00→02:00, сейчас 01:00 воскресенья). Иначе — окно
+ * сегодняшнего дня/праздника.
+ */
+export function resolveActiveWindow(store: PersistedStore, date: Date): ActiveWindow {
+  const yesterday = new Date(date.getTime() - 86_400_000);
+  const prev = resolveBaseWindow(store, yesterday);
+  if (!prev.off && isOvernight(prev.win.start, prev.win.end)) {
+    const nowMin = date.getHours() * 60 + date.getMinutes();
+    if (nowMin < hhmmToMin(prev.win.end)) {
+      return { ...prev, carriedOver: true };
+    }
+  }
+  return resolveBaseWindow(store, date);
+}

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PersistedStore, DayWindow, PlaylistBlock, Playlist, Id } from '@shared';
-import { spanMinutes, offsetFromDayStart } from '@shared';
+import type { PersistedStore, DayWindow, Id } from '@shared';
+import { spanMinutes } from '@shared';
 import type { AudioEngine } from '../audio';
 import { buildPlaylistRequest } from '../audio';
+import { playlistBlocksSec, blockAtSec, entryAt } from './auditionCore';
+import type { ResolvedBlock } from './auditionCore';
 
 /**
  * Аудит-плейхед предпрослушки дня/праздника (Чат 8).
@@ -18,13 +20,6 @@ import { buildPlaylistRequest } from '../audio';
 
 const TICK_MS = 50;
 
-interface DayBlock {
-  id: Id;
-  startOff: number; // сек от начала окна
-  endOff: number;
-  pl: Playlist | undefined;
-}
-
 export interface DayAudition {
   playing: boolean;
   clockSec: number;
@@ -36,19 +31,6 @@ export interface DayAudition {
   playPause(): void;
   stop(): void;
   seek(sec: number): void;
-}
-
-/** Вход в плейлист по смещению внутри блока → стартовый трек и сдвиг в нём. */
-function entryAt(pl: Playlist, offsetSec: number): { startIndex: number; startOffsetSec: number } {
-  let acc = 0;
-  for (let k = 0; k < pl.tracks.length; k++) {
-    const d = pl.tracks[k].durationSec;
-    if (offsetSec < acc + d || k === pl.tracks.length - 1) {
-      return { startIndex: k, startOffsetSec: Math.max(0, Math.min(offsetSec - acc, d)) };
-    }
-    acc += d;
-  }
-  return { startIndex: 0, startOffsetSec: 0 };
 }
 
 export function useDayAudition(
@@ -73,26 +55,13 @@ export function useDayAudition(
   const spanRef = useRef(spanSec); spanRef.current = spanSec;
 
   /** Плейлист-блоки окна в секундах от начала, с резолвом плейлистов. */
-  const dayBlocks = useCallback((): DayBlock[] => {
-    const w = winRef.current; const s = storeRef.current;
-    return w.blocks
-      .filter((b): b is PlaylistBlock => b.kind === 'playlist')
-      .map((b) => {
-        const startOff = offsetFromDayStart(w.start, b.start) * 60;
-        const lenSec = spanMinutes(b.start, b.end) * 60;
-        return { id: b.id, startOff, endOff: startOff + lenSec, pl: s.playlists.find((p) => p.id === b.refId) };
-      });
+  const dayBlocks = useCallback((): ResolvedBlock[] => {
+    return playlistBlocksSec(winRef.current, storeRef.current.playlists);
   }, []);
 
   /** Блок под курсором: из покрывающих — с самым поздним стартом. */
-  const blockAt = useCallback((clock: number): DayBlock | null => {
-    let best: DayBlock | null = null;
-    for (const b of dayBlocks()) {
-      if (clock >= b.startOff && clock < b.endOff) {
-        if (!best || b.startOff > best.startOff) best = b;
-      }
-    }
-    return best;
+  const blockAt = useCallback((clock: number): ResolvedBlock | null => {
+    return blockAtSec(dayBlocks(), clock);
   }, [dayBlocks]);
 
   /** Привести движок в соответствие позиции часов. force — перезайти даже в тот же блок. */

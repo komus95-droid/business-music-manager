@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { AppMode, ThemeMode } from '@shared';
 
 interface Props {
@@ -10,12 +11,14 @@ interface Props {
   onClear(): void;
   canClear: boolean;
   canEdit: boolean;
+  /** правый слот шапки — статус-карточка эфира (Чат 9) */
+  extra?: ReactNode;
 }
 
 const SNAP_OPTIONS = [1, 5, 15];
 
-/** Шапка: логотип, переключатель Студия/В эфире, шаг привязки, тема. */
-export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClear, canClear, canEdit }: Props) {
+/** Шапка: логотип, переключатель Студия/В эфире, шаг привязки, тема, статус эфира. */
+export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClear, canClear, canEdit, extra }: Props) {
   return (
     <header className="appbar">
       <span className="logo">Commercial <b>Player</b></span>
@@ -52,6 +55,8 @@ export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onCle
           {theme === 'dark' ? '☾' : '☀'}
         </button>
       </div>
+
+      {extra}
     </header>
   );
 }

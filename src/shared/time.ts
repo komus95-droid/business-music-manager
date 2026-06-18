@@ -131,6 +131,26 @@ export function ddmmToOrdinal(date: DDMM): number {
   return acc + d;
 }
 
+/**
+ * Реальная дата (JS Date) → порядковый номер дня в году (1–366) по той же
+ * невисокосной раскладке (февраль = 29), что и ddmmToOrdinal. Согласованность
+ * с раскладкой праздников важнее астрономической точности: эфир сравнивает
+ * «сегодня» с диапазонами праздников в одном кадре. Используется в
+ * resolveActiveWindow (эфир, Чат 9).
+ */
+export function ordinalOfDate(date: Date): number {
+  const m = date.getMonth(); // 0..11
+  const d = date.getDate();
+  let acc = 0;
+  for (let i = 0; i < m; i++) acc += DAYS_IN_MONTH[i];
+  return acc + d;
+}
+
+/** Реальная дата → 'HH:MM' текущего времени (секунды отбрасываются). */
+export function dateToHHMM(date: Date): HHMM {
+  return minToHHMM(date.getHours() * 60 + date.getMinutes());
+}
+
 /** Форматирование длительности в секундах → 'M:SS' (например 212 → '3:32'). */
 export function fmtDuration(totalSec: number): string {
   const s = Math.max(0, Math.round(totalSec));

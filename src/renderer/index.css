@@ -422,3 +422,50 @@ body {
 .player-vol input[type=range] { width: 96px; accent-color: var(--accent); }
 .player-vol b { color: var(--text); min-width: 34px; font-variant-numeric: tabular-nums; }
 .player.onair .player-now { color: var(--muted); }
+
+/* ── Статус-карточка эфира в шапке (Чат 9) ───────────────── */
+.onair-card {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 5px 11px; min-width: 234px; max-width: 300px;
+}
+.onair-card.live { border-color: rgba(255, 77, 77, .45); }
+.oa-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--muted);
+  flex-shrink: 0; transition: background .2s;
+}
+.onair-card.live .oa-dot { background: #ff4d4d; animation: oa-pulse 1.4s infinite; }
+@keyframes oa-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 77, 77, .55); }
+  70%  { box-shadow: 0 0 0 7px rgba(255, 77, 77, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+}
+.oa-main { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.oa-top { display: flex; align-items: center; gap: 7px; }
+.oa-label {
+  font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+}
+.oa-badge {
+  font-size: 9px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 5px; white-space: nowrap; flex-shrink: 0;
+}
+.oa-badge.studio { background: var(--line2); color: var(--muted); }
+.oa-badge.on     { background: rgba(255, 77, 77, .16); color: #ff8585; }
+.oa-badge.off    { background: rgba(235, 87, 87, .14); color: var(--danger); }
+.oa-badge.wait   { background: rgba(47, 128, 237, .16); color: var(--accent); }
+.oa-now {
+  font-size: 10px; color: var(--muted); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+}
+.oa-wave { display: flex; align-items: center; gap: 2px; height: 18px; flex-shrink: 0; }
+.oa-wave span { width: 2px; border-radius: 2px; background: var(--accent); opacity: .45; display: block; }
+.oa-wave.on span { animation: oa-bar 1s infinite ease-in-out; }
+.onair-card.live .oa-wave.on span { background: #ff6b6b; }
+@keyframes oa-bar { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+.oa-clock {
+  text-align: right; border-left: 1px solid var(--line);
+  padding-left: 10px; flex-shrink: 0;
+}
+.oa-time { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; color: var(--text); }
+.oa-date { font-size: 9px; color: var(--muted); font-variant-numeric: tabular-nums; }

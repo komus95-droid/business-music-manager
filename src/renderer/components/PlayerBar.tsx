@@ -79,7 +79,7 @@ export function PlayerBar({ mode, volume, onVolume }: Props) {
         <b>{volume}%</b>
       </label>
 
-      {onAir && <span className="player-hint">автовещание — Чат 9</span>}
+      {onAir && <span className="player-hint">автовещание по расписанию</span>}
     </footer>
   );
 }
