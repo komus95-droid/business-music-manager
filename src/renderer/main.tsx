@@ -3,6 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './index.css';
 
+// ДИАГНОСТИКА (Чат 10): метка, что бандл вообще начал исполняться. Инлайновый
+// диагностический скрипт в index.html прочитает её — так отличаем «скрипт не
+// загрузился» от «загрузился, но рендер упал».
+(window as { __APP_BUNDLE_RAN__?: boolean }).__APP_BUNDLE_RAN__ = true;
+
 // Видимый аварийный экран вместо «чёрного окна»: если бандл/рендер упадёт,
 // показываем текст ошибки прямо в окне (в проде DevTools под рукой нет).
 function showFatal(label: string, err: unknown) {

@@ -230,6 +230,9 @@ function createWindow(): BrowserWindow {
   } else {
     win.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
+  // ДИАГНОСТИКА (Чат 10): открываем DevTools и в проде, чтобы видеть Console
+  // (ошибки загрузки ресурсов / скрипта). Убрать после починки чёрного экрана.
+  win.webContents.openDevTools({ mode: 'detach' });
   win.once('ready-to-show', () => win.show());
   return win;
 }
