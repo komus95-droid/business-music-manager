@@ -7,6 +7,8 @@ import { DayList } from './components/DayList';
 import { HolidayBar } from './components/HolidayBar';
 import { PlayerBar } from './components/PlayerBar';
 import { LibraryPanel } from './library/LibraryPanel';
+import { PlaylistEditor } from './library/PlaylistEditor';
+import { AnnouncementEditor } from './library/AnnouncementEditor';
 import { DayEditor } from './schedule/DayEditor';
 import { HolidayEditor } from './schedule/HolidayEditor';
 import { SNAP_DEFAULT } from './schedule/timeline';
@@ -40,6 +42,14 @@ export function App() {
         : null;
 
   const holConflicts = conflictingHolidayIds(store.holidays);
+
+  // выбранный ассет библиотеки (для подсветки в панели и резолва редактора)
+  const playlist = view.type === 'playlist' ? store.playlists.find((p) => p.id === view.id) : undefined;
+  const announcement = view.type === 'announcement' ? store.announcements.find((a) => a.id === view.id) : undefined;
+
+  function newPlaylist() { setView({ type: 'playlist', id: api.addPlaylist() }); }
+  function newAnnouncement() { setView({ type: 'announcement', id: api.addAnnouncement() }); }
+  function backToWeek() { setView({ type: 'day', id: 'mon' }); }
 
   function addHoliday() {
     const id = api.addHoliday();
@@ -96,12 +106,26 @@ export function App() {
             <p className="onair-note" role="status">Праздник удалён. Выберите день или другой праздник.</p>
           )}
 
-          {(view.type === 'playlist' || view.type === 'announcement') && (
-            <p className="onair-note" role="status">Редактор библиотеки — Чат 7.</p>
+          {view.type === 'playlist' && (playlist
+            ? <PlaylistEditor playlist={playlist} store={store} api={api} canEdit={canEdit} onDeleted={backToWeek} />
+            : <p className="onair-note" role="status">Плейлист удалён. Выберите ассет в библиотеке.</p>
+          )}
+
+          {view.type === 'announcement' && (announcement
+            ? <AnnouncementEditor announcement={announcement} store={store} api={api} canEdit={canEdit} onDeleted={backToWeek} />
+            : <p className="onair-note" role="status">Объявление удалено. Выберите ассет в библиотеке.</p>
           )}
         </main>
 
-        <LibraryPanel store={store} canDrag={canEdit} />
+        <LibraryPanel
+          store={store} canDrag={canEdit}
+          selectedPlaylistId={view.type === 'playlist' ? view.id : null}
+          selectedAnnouncementId={view.type === 'announcement' ? view.id : null}
+          onOpenPlaylist={(id) => setView({ type: 'playlist', id })}
+          onOpenAnnouncement={(id) => setView({ type: 'announcement', id })}
+          onNewPlaylist={newPlaylist}
+          onNewAnnouncement={newAnnouncement}
+        />
       </div>
 
       <PlayerBar />

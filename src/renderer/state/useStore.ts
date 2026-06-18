@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   PersistedStore, Id, HHMM, WeekDay, Holiday, BlockOwner,
   PlaylistBlock, AnnouncementBlock, ScheduleBlock,
+  Playlist, Announcement,
 } from '@shared';
 import {
   newId, playlistBlockEnd, resolvePlaylistStart,
@@ -39,6 +40,27 @@ export interface StoreApi {
   addHoliday(): Id | null;
   removeHoliday(id: Id): void;
   setHolidayMeta(id: Id, patch: Partial<Pick<Holiday, 'name' | 'from' | 'to' | 'year'>>): void;
+
+  // библиотека — плейлисты (Чат 7)
+  addPlaylist(): Id;
+  removePlaylist(id: Id): void;
+  setPlaylistMeta(id: Id, patch: Partial<Pick<Playlist, 'name' | 'color' | 'crossfade'>>): void;
+  addTrack(playlistId: Id, media: ImportedTrack): void;
+  removeTrack(playlistId: Id, trackId: Id): void;
+  moveTrack(playlistId: Id, trackId: Id, dir: -1 | 1): void;
+
+  // библиотека — объявления (Чат 7)
+  addAnnouncement(): Id;
+  removeAnnouncement(id: Id): void;
+  setAnnouncementMeta(id: Id, patch: Partial<Pick<Announcement, 'name' | 'color' | 'volume'>>): void;
+  setAnnouncementFile(id: Id, media: ImportedTrack): void;
+}
+
+/** Импортированный MP3 (результат window.api.importMp3): файл уже в media/. */
+export interface ImportedTrack {
+  name: string;
+  durationSec: number;
+  file: string;
 }
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -85,6 +107,16 @@ function defaultHoliday(id: Id): Holiday {
     off: false,
     blocks: [],
   };
+}
+
+/** Заготовка нового плейлиста (пустой; бесшовный переход включён). */
+function defaultPlaylist(id: Id): Playlist {
+  return { id, name: 'Новый плейлист', color: 'blue', crossfade: true, tracks: [] };
+}
+
+/** Заготовка нового объявления (без файла; длительность появится при импорте). */
+function defaultAnnouncement(id: Id): Announcement {
+  return { id, name: 'Новое объявление', color: 'orange', durationSec: 0, file: '', volume: 100 };
 }
 
 export function useStore(): StoreApi {
@@ -198,10 +230,99 @@ export function useStore(): StoreApi {
     mutate((s) => ({ ...s, holidays: s.holidays.map((h) => (h.id === id ? { ...h, ...patch } : h)) }));
   }, [mutate]);
 
+  // ── Библиотека: плейлисты ──────────────────────────────────────────────
+  // Заметка: длительность блока ФИКСИРУЕТСЯ при добавлении на шкалу
+  // (playlistBlockEnd). Поэтому правка состава/кроссфейда плейлиста, уже
+  // стоящего в расписании, заблокирована в UI (isAssetLocked) — иначе блоки
+  // разъехались бы с реальной длиной. Здесь мутаторы чистые, гейт — в редакторе.
+
+  const addPlaylist: StoreApi['addPlaylist'] = useCallback(() => {
+    const id = newId();
+    mutate((s) => ({ ...s, playlists: [...s.playlists, defaultPlaylist(id)] }));
+    return id;
+  }, [mutate]);
+
+  const removePlaylist: StoreApi['removePlaylist'] = useCallback((id) => {
+    mutate((s) => ({ ...s, playlists: s.playlists.filter((p) => p.id !== id) }));
+    void window.api.deleteMedia({ kind: 'playlistFolder', playlistId: id }).catch(() => {});
+  }, [mutate]);
+
+  const setPlaylistMeta: StoreApi['setPlaylistMeta'] = useCallback((id, patch) => {
+    mutate((s) => ({ ...s, playlists: s.playlists.map((p) => (p.id === id ? { ...p, ...patch } : p)) }));
+  }, [mutate]);
+
+  const addTrack: StoreApi['addTrack'] = useCallback((playlistId, media) => {
+    mutate((s) => ({
+      ...s,
+      playlists: s.playlists.map((p) => (p.id === playlistId
+        ? { ...p, tracks: [...p.tracks, { id: newId(), name: media.name, durationSec: media.durationSec, file: media.file }] }
+        : p)),
+    }));
+  }, [mutate]);
+
+  const removeTrack: StoreApi['removeTrack'] = useCallback((playlistId, trackId) => {
+    const cur = storeRef.current;
+    const file = cur?.playlists.find((p) => p.id === playlistId)?.tracks.find((t) => t.id === trackId)?.file;
+    mutate((s) => ({
+      ...s,
+      playlists: s.playlists.map((p) => (p.id === playlistId
+        ? { ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }
+        : p)),
+    }));
+    if (file) void window.api.deleteMedia({ kind: 'track', playlistId, file }).catch(() => {});
+  }, [mutate]);
+
+  const moveTrack: StoreApi['moveTrack'] = useCallback((playlistId, trackId, dir) => {
+    mutate((s) => ({
+      ...s,
+      playlists: s.playlists.map((p) => {
+        if (p.id !== playlistId) return p;
+        const i = p.tracks.findIndex((t) => t.id === trackId);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= p.tracks.length) return p;
+        const tracks = p.tracks.slice();
+        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+        return { ...p, tracks };
+      }),
+    }));
+  }, [mutate]);
+
+  // ── Библиотека: объявления (1 объявление = 1 трек) ──────────────────────
+  const addAnnouncement: StoreApi['addAnnouncement'] = useCallback(() => {
+    const id = newId();
+    mutate((s) => ({ ...s, announcements: [...s.announcements, defaultAnnouncement(id)] }));
+    return id;
+  }, [mutate]);
+
+  const removeAnnouncement: StoreApi['removeAnnouncement'] = useCallback((id) => {
+    const cur = storeRef.current;
+    const file = cur?.announcements.find((a) => a.id === id)?.file;
+    mutate((s) => ({ ...s, announcements: s.announcements.filter((a) => a.id !== id) }));
+    if (file) void window.api.deleteMedia({ kind: 'announcement', file }).catch(() => {});
+  }, [mutate]);
+
+  const setAnnouncementMeta: StoreApi['setAnnouncementMeta'] = useCallback((id, patch) => {
+    mutate((s) => ({ ...s, announcements: s.announcements.map((a) => (a.id === id ? { ...a, ...patch } : a)) }));
+  }, [mutate]);
+
+  const setAnnouncementFile: StoreApi['setAnnouncementFile'] = useCallback((id, media) => {
+    const cur = storeRef.current;
+    const old = cur?.announcements.find((a) => a.id === id)?.file;
+    mutate((s) => ({
+      ...s,
+      announcements: s.announcements.map((a) => (a.id === id
+        ? { ...a, file: media.file, durationSec: media.durationSec }
+        : a)),
+    }));
+    if (old && old !== media.file) void window.api.deleteMedia({ kind: 'announcement', file: old }).catch(() => {});
+  }, [mutate]);
+
   return {
     store, error,
     setHours, addPlaylistBlock, addAnnouncementBlock,
     movePlaylistBlock, moveAnnouncementBlock, removeBlock, clearBlocks,
     addHoliday, removeHoliday, setHolidayMeta,
+    addPlaylist, removePlaylist, setPlaylistMeta, addTrack, removeTrack, moveTrack,
+    addAnnouncement, removeAnnouncement, setAnnouncementMeta, setAnnouncementFile,
   };
 }
