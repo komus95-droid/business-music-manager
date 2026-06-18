@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && tsc -p tsconfig.electron.json && electron .\"",
     "build:main": "tsc -p tsconfig.electron.json",
+    "build:preload": "esbuild src/preload/preload.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=dist-electron/preload/preload.js",
     "build:renderer": "vite build",
-    "build": "npm run build:renderer && npm run build:main",
+    "build": "npm run build:renderer && npm run build:main && npm run build:preload",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "test": "npm run build:main && node test/smoke.cjs",
     "dist": "npm run build && electron-builder"
