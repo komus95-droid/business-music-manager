@@ -626,3 +626,36 @@
 .lane-an .block.ad{width:150px;height:28px}
 .lane-an .block.ad .b-title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lane-an .block.ad .b-sub{font-size:9px}
+
+/* ===== v1.3.1 ===== */
+/* A. Единый фрейм: один фон+рамка, дорожки прозрачные, между ними один разделитель */
+.track-frame{
+  background:linear-gradient(180deg,rgba(120,160,230,.05),transparent 22%);
+  background-image:repeating-linear-gradient(45deg,transparent,transparent 11px,rgba(120,160,230,.045) 11px,rgba(120,160,230,.045) 22px);
+}
+.track-frame .lane{border:none;border-radius:0;background:none}
+.track-frame .lane.lane-an{border-bottom:1px solid var(--line-2)}
+.track-frame .lane.lane-pl{min-height:120px}
+
+/* E. Окошко часов режима работы — фикс. ширина, не клипает HH:MM */
+.stage-head input[type="time"]{width:104px;min-width:104px;flex-shrink:0}
+.hours-edit{flex-wrap:nowrap}
+.hour{white-space:nowrap}
+
+/* C1. Плашка объявления — в одну строку: 📢 имя … время */
+.lane-an .block.ad{flex-direction:row;align-items:center;gap:7px;height:26px;padding:4px 9px}
+.lane-an .block.ad .b-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lane-an .block.ad .b-sub{flex-shrink:0;font-size:9.5px;align-self:auto;border-bottom:1px dotted rgba(255,255,255,.5)}
+
+/* C2. Блок музыки — адаптивный текст: на узких прячем лишнее (container queries) */
+.lane-pl .block{container-type:inline-size}
+@container (max-width: 168px){ .lane-pl .block .b-wave{display:none} }
+@container (max-width: 120px){
+  .lane-pl .block .b-time{display:none}
+  .lane-pl .block .b-title{font-size:11px}
+}
+@container (max-width: 78px){
+  .lane-pl .block.has-play{padding-left:11px}
+  .lane-pl .block .b-play{display:none}
+  .lane-pl .block .b-title{display:none}
+}
