@@ -235,7 +235,43 @@ function createWindow(): BrowserWindow {
   } else {
     win.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
-  win.once('ready-to-show', () => win.show());
+
+  // ── ДИАГНОСТИКА (Чат 10, v1.0.5): показываем точную ошибку нативным окном.
+  // Всё на стороне main — не зависит ни от preload, ни от рендерера.
+  const BUILD = 'v1.0.5-diag';
+  const consoleErr: string[] = [];
+  win.webContents.on('console-message', (_e, level, message, line, source) => {
+    if (level >= 2) consoleErr.push(`[${level === 3 ? 'ERR' : 'WARN'}] ${message}` + (source ? ` (${source}:${line})` : ''));
+  });
+  win.webContents.on('preload-error', (_e, preloadPath, error) => {
+    dialog.showErrorBox('Commercial Player — ошибка preload', `${preloadPath}\n\n${error.stack || String(error)}`);
+  });
+  win.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      void (async () => {
+        try {
+          const kids = await win.webContents.executeJavaScript(
+            'document.getElementById("root") ? document.getElementById("root").childElementCount : -1',
+          );
+          if (kids === 0 || kids === -1) {
+            const apiType = await win.webContents.executeJavaScript('typeof window.api');
+            dialog.showErrorBox(
+              `Commercial Player ${BUILD} — интерфейс не отрисовался`,
+              `window.api (мост preload): ${apiType}\n#root детей: ${kids}\n\n` +
+              `Ошибки/предупреждения консоли:\n${consoleErr.join('\n') || '(пусто)'}`,
+            );
+          }
+        } catch (e) {
+          dialog.showErrorBox('Commercial Player — ошибка самодиагностики', String(e));
+        }
+      })();
+    }, 3000);
+  });
+
+  win.once('ready-to-show', () => {
+    win.setTitle(`Commercial Player ${BUILD}`); // версия видна в заголовке окна
+    win.show();
+  });
   return win;
 }
 
