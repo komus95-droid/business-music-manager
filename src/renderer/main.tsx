@@ -43,14 +43,26 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 window.addEventListener('error', (e) => showFatal('Ошибка выполнения', e.error ?? e.message));
 window.addEventListener('unhandledrejection', (e) => showFatal('Необработанная ошибка (promise)', e.reason));
 
-try {
-  createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </React.StrictMode>,
-  );
-} catch (err) {
-  showFatal('Ошибка при запуске интерфейса', err);
+function mount() {
+  try {
+    const el = document.getElementById('root');
+    if (!el) { showFatal('Контейнер #root не найден', new Error('root missing')); return; }
+    createRoot(el).render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>,
+    );
+  } catch (err) {
+    showFatal('Ошибка при запуске интерфейса', err);
+  }
+}
+
+// Скрипт классический и стоит в <head>; запускаемся только когда DOM готов,
+// иначе #root ещё не существует и createRoot падает (это и был чёрный экран).
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mount);
+} else {
+  mount();
 }

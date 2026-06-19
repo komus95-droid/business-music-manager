@@ -238,7 +238,7 @@ function createWindow(): BrowserWindow {
 
   // ── ДИАГНОСТИКА (Чат 10, v1.0.5): показываем точную ошибку нативным окном.
   // Всё на стороне main — не зависит ни от preload, ни от рендерера.
-  const BUILD = 'v1.0.5-diag';
+  const BUILD = 'v1.0.6';
   const consoleErr: string[] = [];
   win.webContents.on('console-message', (_e, level, message, line, source) => {
     if (level >= 2) consoleErr.push(`[${level === 3 ? 'ERR' : 'WARN'}] ${message}` + (source ? ` (${source}:${line})` : ''));

@@ -11,7 +11,10 @@ export default defineConfig({
       // поэтому снимаем type="module"/crossorigin → классический <script src>.
       name: 'classic-script-for-file-protocol',
       transformIndexHtml(html: string) {
-        return html.replace(/\s+type="module"/g, '').replace(/\s+crossorigin/g, '');
+        // Снимаем type="module" (под file:// внешний модуль не исполняется) и
+        // ставим defer — иначе классический скрипт в <head> стартует ДО <body>,
+        // и #root ещё не существует. crossorigin тоже убираем.
+        return html.replace(/ type="module"/g, ' defer').replace(/ crossorigin/g, '');
       },
     },
   ],
