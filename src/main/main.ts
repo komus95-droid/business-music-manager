@@ -238,7 +238,7 @@ function createWindow(): BrowserWindow {
 
   // ── ДИАГНОСТИКА (Чат 10, v1.0.5): показываем точную ошибку нативным окном.
   // Всё на стороне main — не зависит ни от preload, ни от рендерера.
-  const BUILD = 'v1.0.8';
+  const BUILD = 'v1.0.9';
   const consoleErr: string[] = [];
   let errDlgTimer: NodeJS.Timeout | null = null;
   win.webContents.on('console-message', (_e, level, message, line, source) => {

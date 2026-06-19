@@ -189,7 +189,7 @@ export class AudioEngine {
     this.resumeCtx();
     if (this.eq.ensure()) this.eq.apply(this.audio.eq);
 
-    const howl = new Howl({ src: [req.url], html5: false, preload: true });
+    const howl = new Howl({ src: [req.url], html5: true, preload: true, format: ['mp3'] });
     howl.once('loaderror', (_id: number, err: unknown) => {
       console.error('[AUDIO] Ошибка загрузки объявления:', req.url, err);
       this.onAnnouncementEnd(howl);
@@ -263,7 +263,7 @@ export class AudioEngine {
   private startTrack(index: number, offsetSec: number, fadeSec: number, dir: Fading): void {
     const t = this.req!.tracks[index];
     console.warn('[AUDIO] старт трека:', t.url); // диагностика: видеть попытку проигрывания
-    const howl = new Howl({ src: [t.url], html5: false, preload: true });
+    const howl = new Howl({ src: [t.url], html5: true, preload: true, format: ['mp3'] });
     howl.once('loaderror', (_id: number, err: unknown) =>
       console.error('[AUDIO] Ошибка загрузки трека:', t.url, err));
     howl.once('playerror', (_id: number, err: unknown) =>
