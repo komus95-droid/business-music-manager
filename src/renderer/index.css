@@ -594,3 +594,13 @@
 .lane-pl .block, .lane-an .block.ad{cursor:grab}
 .lane-pl .block:active, .lane-an .block.ad:active{cursor:grabbing}
 .lane-pl .block .b-x, .lane-an .block.ad .b-x{cursor:pointer}
+
+/* v1.2.3 — привязка геометрии «фишек» прототипа к нашим дорожкам */
+.lane-pl .overlap{top:16px;height:8px}              /* кроссфейд/конфликт-полоса над блоками */
+.lane-an .ad-pin{top:24px;bottom:6px}               /* вертикальный маркер объявления */
+.time-pop input[type="time"]{background:var(--panel-2);border:1px solid var(--line);color:var(--txt);
+  border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit;font-variant-numeric:tabular-nums}
+.time-pop input[type="time"]:focus{outline:none;border-color:var(--accent)}
+.lane-pl .block .b-time{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.45);align-self:flex-start}
+.lane-an .block.ad .b-sub{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.45);align-self:flex-start}
+.lane-pl .block:not(.sel) .b-time:hover, .lane-an .block.ad:not(.sel) .b-sub:hover{border-bottom-color:#fff}

@@ -66,3 +66,67 @@ function minOf(t: HHMM): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + m;
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// v1.2.3 — магнитная привязка (перенос «фишек» центральной зоны из прототипа)
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Доля 0..1 → смещение от начала окна в минутах (без привязки к шагу). */
+export function fracToRawOffset(w: Window, frac: number): number {
+  const span = windowSpan(w);
+  return Math.max(0, Math.min(frac, 1)) * span;
+}
+
+/** Смещение в минутах → HHMM (с клампом по окну, овернайт-безопасно). */
+export function offsetToHHMM(w: Window, off: number): HHMM {
+  const span = windowSpan(w);
+  return addMinutes(w.start, Math.max(0, Math.min(Math.round(off), span)));
+}
+
+export interface EdgeBlock {
+  kind: 'playlist' | 'announcement';
+  id: string;
+  start: HHMM;
+  end?: HHMM;
+  at?: HHMM;
+}
+
+/**
+ * «Магнитные» края внутри окна (смещения в минутах): границы дня + начала/концы
+ * блоков плейлистов + точки объявлений. Перетаскиваемый блок исключается.
+ */
+export function windowEdges(w: Window, blocks: EdgeBlock[], excludeId?: string): number[] {
+  const span = windowSpan(w);
+  const edges = [0, span];
+  for (const b of blocks) {
+    if (b.id === excludeId) continue;
+    if (b.kind === 'playlist' && b.end) {
+      const s = offsetFromDayStart(w.start, b.start);
+      edges.push(s, s + spanMinutes(b.start, b.end));
+    } else if (b.kind === 'announcement' && b.at) {
+      edges.push(offsetFromDayStart(w.start, b.at));
+    }
+  }
+  return edges;
+}
+
+/** Порог «магнита» в минутах: max(шаг, ~12px в минутах) — resize-safe. */
+export function magnetThresholdMin(w: Window, laneWidthPx: number, snap: number): number {
+  const span = windowSpan(w);
+  const minPerPx = laneWidthPx > 0 ? span / laneWidthPx : 1;
+  return Math.max(snap, minPerPx * 12);
+}
+
+/**
+ * Привязать смещение: сначала к шагу сетки, затем — к ближайшему «магнитному»
+ * краю, если он ближе порога (край перекрывает сетку). Возвращает минуты.
+ */
+export function snapOffset(off: number, snap: number, edges: number[], thresholdMin: number): number {
+  let best = Math.round(off / snap) * snap;
+  let bd = thresholdMin;
+  for (const e of edges) {
+    const d = Math.abs(e - off);
+    if (d < bd) { bd = d; best = e; }
+  }
+  return Math.round(best);
+}

@@ -6,16 +6,16 @@ import { useAudio } from '../audio/AudioProvider';
 import { MiniTransport } from '../audio/MiniTransport';
 import { PlaylistLane } from './PlaylistLane';
 import { AnnouncementLane } from './AnnouncementLane';
+import { TimePopover } from './TimePopover';
+import type { TimeEdit } from './TimePopover';
 import { hourTicks } from './timeline';
 import { useDayAudition } from './useDayAudition';
 
 /**
- * Корпус шкалы (линейка + дорожка плейлистов + дорожка объявлений + сводка
- * конфликтов), общий для дня недели и праздника. Владелец передаётся как
- * `location: BlockOwner`; геометрия времени — из Чата 5.
- *
- * Чат 8: поверх дорожек — плейхед предпрослушки, а под ними — транспорт
- * аудита дня (play/scrub). В эфире предпрослушка выключена.
+ * Корпус шкалы (линейка + дорожка объявлений + дорожка плейлистов + сводка
+ * конфликтов), общий для дня недели и праздника. Геометрия времени — из Чата 5,
+ * магнитная привязка/направляющая/всплывашка точного времени — v1.2.3 (перенос
+ * «фишек» прототипа). Конфликты наложения теперь рисуются полосами в дорожке.
  */
 interface Props {
   win: DayWindow;
@@ -30,15 +30,13 @@ const pct = (frac: number) => `${frac * 100}%`;
 
 export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props) {
   const [selected, setSelected] = useState<Id | null>(null);
-  useEffect(() => setSelected(null), [location.kind, location.id]);
+  const [edit, setEdit] = useState<TimeEdit | null>(null);
+  useEffect(() => { setSelected(null); setEdit(null); }, [location.kind, location.id]);
 
   const { engine } = useAudio();
   const audition = useDayAudition(win, store, engine, canEdit, `${location.kind}:${location.id}`);
 
-  const conflictIds = new Set<Id>();
-  for (const ov of findPlaylistOverlaps(win.blocks, store.audio)) {
-    if (!ov.isCrossfade) { conflictIds.add(ov.aId); conflictIds.add(ov.bId); }
-  }
+  const hasConflict = findPlaylistOverlaps(win.blocks, store.audio).some((o) => !o.isCrossfade);
   const silence = findSilenceGaps(win);
   const ticks = hourTicks(win);
 
@@ -58,16 +56,17 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
           onAdd={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
           onMove={(id, t) => api.moveAnnouncementBlock(location, id, t)}
           onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
+          onEditTime={(id, value, x, y) => setEdit({ kind: 'announcement', id, value, x, y })}
         />
 
         <PlaylistLane
-          win={win} playlists={store.playlists}
-          conflictIds={conflictIds} silence={silence}
-          snap={snap} canEdit={canEdit}
+          win={win} playlists={store.playlists} audio={store.audio}
+          silence={silence} snap={snap} canEdit={canEdit}
           selectedId={selected} onSelect={setSelected}
           onAdd={(refId, t) => api.addPlaylistBlock(location, refId, t)}
           onMove={(id, t) => api.movePlaylistBlock(location, id, t)}
           onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
+          onEditTime={(id, value, x, y) => setEdit({ kind: 'playlist', id, value, x, y })}
         />
 
         {canEdit && (
@@ -75,10 +74,10 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
         )}
       </div>
 
-      {conflictIds.size > 0 && (
+      {hasConflict && (
         <p className="warn" role="alert">
-          <b>Конфликт:</b> блоки плейлистов наложились. Конец блока фиксирован его
-          длительностью — раздвиньте начала или уберите лишний блок.
+          <b>Конфликт:</b> блоки плейлистов наложились (красная полоса). Конец блока
+          фиксирован его длительностью — раздвиньте начала или уберите лишний блок.
         </p>
       )}
 
@@ -96,6 +95,17 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
           hint={canEdit ? 'аудит дня' : '🔴 эфир — предпрослушка выкл.'}
         />
       </div>
+
+      {edit && (
+        <TimePopover
+          edit={edit}
+          onClose={() => setEdit(null)}
+          onApply={(v) => {
+            if (edit.kind === 'playlist') api.movePlaylistBlock(location, edit.id, v);
+            else api.moveAnnouncementBlock(location, edit.id, v);
+          }}
+        />
+      )}
     </>
   );
 }

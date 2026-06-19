@@ -10,7 +10,17 @@ export type DragPayload =
   | { op: 'add'; kind: BlockKind; refId: Id }
   | { op: 'move'; kind: BlockKind; blockId: Id };
 
+/**
+ * Текущий перетаскиваемый объект в модульной переменной: во время `dragover`
+ * браузер не отдаёт dataTransfer.getData (безопасность), а нам нужно знать тип
+ * и id для магнита/направляющей. Заполняется в setDrag, чистится на drop/end.
+ */
+let active: DragPayload | null = null;
+export function getActiveDrag(): DragPayload | null { return active; }
+export function clearActiveDrag(): void { active = null; }
+
 export function setDrag(e: DragEvent, payload: DragPayload): void {
+  active = payload;
   e.dataTransfer.setData('text/plain', JSON.stringify(payload));
   e.dataTransfer.effectAllowed = 'move';
 }
@@ -20,9 +30,9 @@ export function getDrag(e: DragEvent): DragPayload | null {
     const raw = e.dataTransfer.getData('text/plain');
     const p = JSON.parse(raw) as DragPayload;
     if (p && (p.op === 'add' || p.op === 'move')) return p;
-    return null;
+    return active;
   } catch {
-    return null;
+    return active;
   }
 }
 
