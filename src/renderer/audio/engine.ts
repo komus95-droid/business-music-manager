@@ -191,11 +191,11 @@ export class AudioEngine {
 
     const howl = new Howl({ src: [req.url], html5: false, preload: true });
     howl.once('loaderror', (_id: number, err: unknown) => {
-      console.error('Ошибка загрузки объявления:', req.url, err);
+      console.error('[AUDIO] Ошибка загрузки объявления:', req.url, err);
       this.onAnnouncementEnd(howl);
     });
     howl.once('playerror', (_id: number, err: unknown) => {
-      console.error('Ошибка воспроизведения объявления:', req.url, err);
+      console.error('[AUDIO] Ошибка воспроизведения объявления:', req.url, err);
       this.onAnnouncementEnd(howl);
     });
     howl.once('end', () => this.onAnnouncementEnd(howl));
@@ -262,11 +262,12 @@ export class AudioEngine {
 
   private startTrack(index: number, offsetSec: number, fadeSec: number, dir: Fading): void {
     const t = this.req!.tracks[index];
+    console.warn('[AUDIO] старт трека:', t.url); // диагностика: видеть попытку проигрывания
     const howl = new Howl({ src: [t.url], html5: false, preload: true });
     howl.once('loaderror', (_id: number, err: unknown) =>
-      console.error('Ошибка загрузки трека:', t.url, err));
+      console.error('[AUDIO] Ошибка загрузки трека:', t.url, err));
     howl.once('playerror', (_id: number, err: unknown) =>
-      console.error('Ошибка воспроизведения трека:', t.url, err));
+      console.error('[AUDIO] Ошибка воспроизведения трека:', t.url, err));
 
     const id = howl.play();
     if (offsetSec > 0) howl.once('play', () => howl.seek(offsetSec, id));
