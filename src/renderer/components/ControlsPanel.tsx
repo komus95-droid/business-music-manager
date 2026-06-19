@@ -1,16 +1,14 @@
+import type { CSSProperties } from 'react';
 import type { AppMode, AudioSettings, EqBands, EqPresetName } from '@shared';
 import {
   EQ_BAND_LABELS, EQ_PRESETS, EQ_PRESET_LABELS, FADE_OVERLAP_MAX,
 } from '@shared';
 
 /**
- * Нижняя панель настроек звука — соответствует `.controls` прототипа
- * (Чат 10). Авто-дакинг, кроссфейд/нахлёст, сглаживание, мастер-громкость и
+ * Нижняя панель настроек звука — соответствует `.controls` прототипа.
+ * Авто-дакинг, кроссфейд/нахлёст, сглаживание, мастер-громкость и
  * 10-полосный эквалайзер с пресетами и кривой. Любое изменение пишется в
  * store.audio и применяется движком на лету (AudioProvider → applyAudioSettings).
- *
- * Транспорт предпрослушки живёт не здесь, а в сцене (MiniTransport в редакторе
- * дня/плейлиста/объявления) — как preview-bar в прототипе.
  */
 const PRESET_ORDER: EqPresetName[] = [
   'flat', 'pop', 'rock', 'jazz', 'classical', 'dance', 'bass', 'vocal', 'speech',
@@ -38,46 +36,51 @@ export function ControlsPanel({ mode, audio, onVolume, onPatch }: Props) {
   const n = audio.eq.length;
   const pts = audio.eq.map((v, i) => `${((i / (n - 1)) * 100).toFixed(1)},${(100 - v).toFixed(1)}`).join(' ');
 
+  // заливка слайдера громкости (как oninput в прототипе)
+  const volStyle: CSSProperties = {
+    background: `linear-gradient(90deg,var(--accent) 0 ${audio.volume}%,var(--line-2) ${audio.volume}%)`,
+  };
+
   return (
-    <footer className={`controls${onAir ? ' onair' : ''}`} aria-label="Настройки звука">
+    <div className={`controls${onAir ? ' onair' : ''}`} aria-label="Настройки звука">
       <div className="ctl">
-        <div className="ctl-lbl">AUTO-DUCKING</div>
+        <div className="lbl">AUTO-DUCKING <span className="i">i</span></div>
         <input
           type="range" className="slider" min={0} max={100} step={1} value={audio.ducking}
           aria-label="Авто-дакинг"
           onChange={(e) => onPatch({ ducking: Number(e.target.value) })}
         />
-        <div className="ctl-val">{audio.ducking}%</div>
+        <div className="val">{audio.ducking}%</div>
       </div>
 
       <div className="ctl">
-        <div className="ctl-lbl">FADE OVERLAP</div>
+        <div className="lbl">FADE OVERLAP</div>
         <input
           type="range" className="slider" min={0} max={FADE_OVERLAP_MAX} step={1} value={audio.fadeOverlap}
           aria-label="Кроссфейд / нахлёст"
           onChange={(e) => onPatch({ fadeOverlap: Number(e.target.value) })}
         />
-        <div className="ctl-val">{audio.fadeOverlap}с</div>
+        <div className="val">{audio.fadeOverlap}с</div>
       </div>
 
       <div className="ctl">
-        <div className="ctl-lbl">SMOOTHING</div>
+        <div className="lbl">SMOOTHING</div>
         <input
           type="range" className="slider" min={0} max={100} step={1} value={audio.smoothing}
           aria-label="Сглаживание"
           onChange={(e) => onPatch({ smoothing: Number(e.target.value) })}
         />
-        <div className="ctl-val">{audio.smoothing}%</div>
+        <div className="val">{audio.smoothing}%</div>
       </div>
 
       <div className="ctl vol">
-        <div className="ctl-lbl">🔊 ГРОМКОСТЬ</div>
+        <div className="lbl">🔊 ГРОМКОСТЬ</div>
         <input
           type="range" className="slider vol" min={0} max={100} step={1} value={audio.volume}
-          aria-label="Громкость вещания"
+          style={volStyle} aria-label="Громкость вещания"
           onChange={(e) => onVolume(Number(e.target.value))}
         />
-        <div className="ctl-val">{audio.volume}%</div>
+        <div className="val">{audio.volume}%</div>
       </div>
 
       <div className="eq-wrap">
@@ -98,18 +101,18 @@ export function ControlsPanel({ mode, audio, onVolume, onPatch }: Props) {
           </svg>
           <div className="eq">
             {EQ_BAND_LABELS.map((label, i) => (
-              <div className="eq-bar" key={label}>
+              <div className="bar" key={label}>
                 <input
                   type="range" min={0} max={100} step={1} value={audio.eq[i]}
                   aria-label={`EQ ${label}`}
                   onChange={(e) => setBand(i, Number(e.target.value))}
                 />
-                <span className="eq-bn">{label}</span>
+                <span className="bn">{label}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
-    </footer>
+    </div>
   );
 }

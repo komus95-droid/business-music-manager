@@ -43,8 +43,6 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
   const effSec = playlistEffectiveSec(pl, store.audio);
 
   // ── Предпрослушивание (Чат 8) ──────────────────────────────────────────
-  // Слушать можно даже запертый плейлист (lock запрещает только правку).
-  // Нельзя — только в эфире и когда нет треков.
   const active = playback.status !== 'idle' && playback.playlistId === pl.id;
   const playing = active && playback.status === 'playing';
   const canPreview = canEdit && pl.tracks.length > 0;
@@ -59,7 +57,6 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
     }
   }
 
-  // Оборвать предпрослушку при уходе с плейлиста, при входе в эфир и на размонтаже.
   useEffect(() => {
     const id = pl.id;
     return () => { if (engine.getState().playlistId === id) engine.stop(); };
@@ -97,10 +94,10 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
   }
 
   return (
-    <section className="editor pe" aria-label={`Плейлист: ${pl.name}`}>
-      <div className="pe-head">
+    <section className={`pl-editor${locked ? ' locked' : ''}`} aria-label={`Плейлист: ${pl.name}`}>
+      <div className="pl-top">
         <input
-          className="pe-name" value={pl.name} disabled={ro}
+          className="pl-name" value={pl.name} disabled={ro}
           aria-label="Название плейлиста" maxLength={60}
           onChange={(e) => api.setPlaylistMeta(pl.id, { name: e.target.value })}
         />
@@ -122,11 +119,9 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
           />
           Бесшовный переход
         </label>
-        <span className="pe-total">
-          {fmtDuration(effSec)} · {pl.tracks.length} трек(ов)
-        </span>
+        <span className="pl-total">{fmtDuration(effSec)} · {pl.tracks.length} трек(ов)</span>
         <button
-          type="button" className="btn pe-del" disabled={locked || !canEdit}
+          type="button" className="del-pl" disabled={locked || !canEdit}
           title={locked ? 'Используется в расписании' : 'Удалить плейлист'}
           onClick={del}
         >Удалить</button>
@@ -141,7 +136,7 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
       )}
 
       <div
-        className={`trk-list${dz ? ' dz' : ''}`}
+        className={`track-list${dz ? ' dz' : ''}`}
         onDragOver={(e) => { if (!ro && hasFiles(e)) { e.preventDefault(); setDz(true); } }}
         onDragLeave={() => setDz(false)}
         onDrop={onDrop}
@@ -153,21 +148,21 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
         )}
         {pl.tracks.map((t, i) => (
           <div className="trk" key={t.id}>
-            <span className="trk-num">{i + 1}</span>
-            <span className="trk-name" title={t.name}>{t.name}</span>
-            <span className="trk-dur">{fmtDuration(t.durationSec)}</span>
+            <span className="num">{i + 1}</span>
+            <span className="tname" title={t.name}>{t.name}</span>
+            <span className="tdur">{fmtDuration(t.durationSec)}</span>
             <span className="trk-move">
               <button
-                type="button" className="btn icon" disabled={ro || i === 0}
+                type="button" className="icon" disabled={ro || i === 0}
                 aria-label="Выше" title="Выше" onClick={() => api.moveTrack(pl.id, t.id, -1)}
               >↑</button>
               <button
-                type="button" className="btn icon" disabled={ro || i === pl.tracks.length - 1}
+                type="button" className="icon" disabled={ro || i === pl.tracks.length - 1}
                 aria-label="Ниже" title="Ниже" onClick={() => api.moveTrack(pl.id, t.id, 1)}
               >↓</button>
             </span>
             <button
-              type="button" className="btn icon trk-del" disabled={ro}
+              type="button" className="del" disabled={ro}
               aria-label="Удалить трек" title="Удалить трек" onClick={() => api.removeTrack(pl.id, t.id)}
             >×</button>
           </div>
@@ -175,8 +170,8 @@ export function PlaylistEditor({ playlist: pl, store, api, canEdit, onDeleted }:
       </div>
 
       {!ro && (
-        <div className="trk-actions">
-          <button type="button" className="btn import" disabled={busy} onClick={importViaDialog}>
+        <div className="track-actions">
+          <button type="button" className="add-track import" disabled={busy} onClick={importViaDialog}>
             {busy ? 'Импорт…' : '📁 Импорт MP3'}
           </button>
           <span className="trk-hint">или перетащите MP3-файлы в список выше</span>

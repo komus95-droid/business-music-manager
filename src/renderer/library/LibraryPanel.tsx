@@ -8,10 +8,10 @@ import {
 import { setDrag } from '../schedule/dnd';
 
 /**
- * Правая панель «Библиотека» (Чат 7). Полноценная: поиск, сортировка,
+ * Правая панель «Библиотека» (Чат 7), разметка прототипа (.col / .col-title /
+ * .assets / .asset-toolbar / .asec / .asset / .add-asset). Поиск, сортировка,
  * сворачиваемые секции, «+ новый», открытие редактора по клику и ИСТОЧНИК
- * drag&drop на шкалу. Имя/цвет/длительность берутся из самого ассета —
- * единый источник истины (блоки на шкале ссылаются только по refId).
+ * drag&drop на шкалу. Имя/цвет/длительность берутся из самого ассета.
  *
  * Перетаскивать можно лишь готовый ассет: плейлист с треками / объявление
  * с файлом — пустой создал бы блок без звука.
@@ -82,43 +82,45 @@ export function LibraryPanel({
   });
 
   return (
-    <aside className="library" aria-label="Библиотека">
-      <div className="lib-title">БИБЛИОТЕКА</div>
-      <div className="lib-toolbar">
-        <input
-          className="lib-search" type="search" placeholder="🔍 Поиск…"
-          value={search} aria-label="Поиск в библиотеке"
-          onChange={(e) => setSearch(e.target.value)}
+    <aside className="col" aria-label="Библиотека">
+      <div className="col-title">БИБЛИОТЕКА</div>
+      <div className="assets">
+        <div className="asset-toolbar">
+          <input
+            className="asset-search" type="search" placeholder="🔍 Поиск…"
+            value={search} aria-label="Поиск в библиотеке"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="asset-sort" value={sort} aria-label="Сортировка"
+            onChange={(e) => setSort(e.target.value as SortKey)}
+          >
+            <option value="name">А–Я</option>
+            <option value="dur">по длине</option>
+            <option value="use">в расписании</option>
+          </select>
+        </div>
+
+        <Section
+          title="МУЗЫКАЛЬНЫЕ ПЛЕЙЛИСТЫ" kind="playlist"
+          rows={process(playlistRows(store), search, sort)}
+          collapsed={collapsed.has('pl')} onToggle={() => toggle('pl')}
+          canDrag={canDrag} selectedId={selectedPlaylistId}
+          onOpen={onOpenPlaylist} onNew={onNewPlaylist}
+          newLabel="+ новый плейлист"
+          emptyHint={search ? 'Ничего не найдено.' : 'Пусто — создайте плейлист.'}
         />
-        <select
-          className="lib-sort" value={sort} aria-label="Сортировка"
-          onChange={(e) => setSort(e.target.value as SortKey)}
-        >
-          <option value="name">А–Я</option>
-          <option value="dur">по длине</option>
-          <option value="use">в расписании</option>
-        </select>
+
+        <Section
+          title="ОБЪЯВЛЕНИЯ" kind="announcement"
+          rows={process(announcementRows(store), search, sort)}
+          collapsed={collapsed.has('ad')} onToggle={() => toggle('ad')}
+          canDrag={canDrag} selectedId={selectedAnnouncementId}
+          onOpen={onOpenAnnouncement} onNew={onNewAnnouncement}
+          newLabel="+ новое объявление"
+          emptyHint={search ? 'Ничего не найдено.' : 'Пусто — создайте объявление.'}
+        />
       </div>
-
-      <Section
-        title="Музыкальные плейлисты" kind="playlist"
-        rows={process(playlistRows(store), search, sort)}
-        collapsed={collapsed.has('pl')} onToggle={() => toggle('pl')}
-        canDrag={canDrag} selectedId={selectedPlaylistId}
-        onOpen={onOpenPlaylist} onNew={onNewPlaylist}
-        newLabel="+ новый плейлист"
-        emptyHint={search ? 'Ничего не найдено.' : 'Пусто — создайте плейлист.'}
-      />
-
-      <Section
-        title="Объявления" kind="announcement"
-        rows={process(announcementRows(store), search, sort)}
-        collapsed={collapsed.has('ad')} onToggle={() => toggle('ad')}
-        canDrag={canDrag} selectedId={selectedAnnouncementId}
-        onOpen={onOpenAnnouncement} onNew={onNewAnnouncement}
-        newLabel="+ новое объявление"
-        emptyHint={search ? 'Ничего не найдено.' : 'Пусто — создайте объявление.'}
-      />
     </aside>
   );
 }
@@ -138,12 +140,14 @@ function Section({
   newLabel: string;
   emptyHint: string;
 }) {
+  const cls = kind === 'playlist' ? 'pl' : 'ad';
+  const icon = kind === 'playlist' ? '♪' : '📢';
   return (
     <div className={`asec${collapsed ? ' collapsed' : ''}`}>
       <button type="button" className="asec-head" aria-expanded={!collapsed} onClick={onToggle}>
-        <span className="asec-t">{title}</span>
+        <span className="t">{title}</span>
         <span className="asec-n">{rows.length}</span>
-        <span className="asec-chev" aria-hidden="true">▾</span>
+        <span className="chev" aria-hidden="true">▼</span>
       </button>
 
       {!collapsed && (
@@ -154,7 +158,7 @@ function Section({
             return (
               <div
                 key={r.id}
-                className={`lib-item${r.id === selectedId ? ' sel' : ''}`}
+                className={`asset ${cls}${r.id === selectedId ? ' sel' : ''}`}
                 draggable={drag}
                 onDragStart={drag
                   ? (e: DragEvent) => setDrag(e, { op: 'add', kind, refId: r.id })
@@ -164,14 +168,14 @@ function Section({
                 role="button" tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
               >
-                <span className="sw" style={{ background: r.colorCss }} />
-                <span className="nm">{r.name}</span>
-                {r.used && <span className="lock" title="Установлен в расписании">📌</span>}
-                <span className="du">{r.durLabel}</span>
+                <span className="ic" aria-hidden="true">{icon}</span>
+                <span className="a-name">{r.name}</span>
+                {r.used && <span className="a-used" title="Установлен в расписании">📌</span>}
+                <span className="dur">{r.durLabel}</span>
               </div>
             );
           })}
-          <button type="button" className="lib-new" disabled={!canDrag} onClick={onNew}>{newLabel}</button>
+          <button type="button" className="add-asset" disabled={!canDrag} onClick={onNew}>{newLabel}</button>
         </div>
       )}
     </div>

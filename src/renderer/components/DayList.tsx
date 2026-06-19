@@ -37,46 +37,48 @@ function blockCounts(d: WeekDay): { pl: number; an: number } {
   return { pl, an };
 }
 
-/** Левая колонка: рабочая неделя — карточка на каждый день с полоской и счётчиками. */
+/** Левая колонка: рабочая неделя — карточка на каждый день (разметка прототипа). */
 export function DayList({ week, playlists, currentDayId, onSelect }: Props) {
   return (
-    <nav className="daylist" aria-label="Дни недели">
-      <div className="daylist-title">РАБОЧАЯ НЕДЕЛЯ</div>
-      {DAY_ORDER.map((id) => {
-        const d = week[id];
-        const active = id === currentDayId;
-        const c = blockCounts(d);
-        const segs = musicSegments(d, playlists);
-        return (
-          <button
-            key={id}
-            type="button"
-            className={`day${active ? ' sel' : ''}${d.off ? ' off' : ''}`}
-            aria-current={active ? 'true' : undefined}
-            onClick={() => onSelect(id)}
-          >
-            <span className="day-top">
-              <span className="day-name">{d.name}</span>
-              <span className="day-time">{d.off ? 'Выходной' : `${d.start}–${d.end}`}</span>
-            </span>
+    <nav className="col" aria-label="Дни недели">
+      <div className="col-title">РАБОЧАЯ НЕДЕЛЯ</div>
+      <div className="week">
+        {DAY_ORDER.map((id) => {
+          const d = week[id];
+          const active = id === currentDayId;
+          const c = blockCounts(d);
+          const segs = musicSegments(d, playlists);
+          const dotCls = d.off ? 'off' : (d.blocks.length ? 'ok' : 'empty');
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`day${active ? ' active' : ''}${d.off ? ' off' : ''}`}
+              aria-current={active ? 'true' : undefined}
+              onClick={() => onSelect(id)}
+            >
+              <div className="d-name">{d.name}</div>
+              <div className="d-hours">{d.off ? 'выходной' : `[${d.start} – ${d.end}]`}</div>
 
-            <span className="day-strip" aria-hidden="true">
-              {!d.off && segs.map((s, i) => (
-                <span
-                  key={i} className="day-seg"
-                  style={{ left: `${s.left * 100}%`, width: `${s.width * 100}%`, background: s.color }}
-                />
-              ))}
-            </span>
+              {!d.off && (
+                <div className="d-strip" aria-hidden="true">
+                  {segs.map((s, i) => (
+                    <span
+                      key={i} className="seg"
+                      style={{ left: `${s.left * 100}%`, width: `${s.width * 100}%`, background: s.color }}
+                    />
+                  ))}
+                </div>
+              )}
 
-            <span className="day-counts">
-              <span className="dc-pl">♪ {c.pl}</span>
-              <span className="dc-sep">·</span>
-              <span className="dc-an">📢 {c.an}</span>
-            </span>
-          </button>
-        );
-      })}
+              <div className="d-meta">
+                <span className={`d-dot ${dotCls}`} />
+                {d.off ? 'выходной' : `♪${c.pl} · 📢${c.an}`}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

@@ -6,57 +6,50 @@ interface Props {
   onMode(mode: AppMode): void;
   theme: ThemeMode;
   onToggleTheme(): void;
-  snap: number;
-  onSnap(snap: number): void;
-  onClear(): void;
-  canClear: boolean;
-  canEdit: boolean;
+  onOpenSettings(): void;
   /** правый слот шапки — статус-карточка эфира (Чат 9) */
   extra?: ReactNode;
 }
 
-const SNAP_OPTIONS = [1, 5, 15];
-
-/** Шапка: логотип, переключатель Студия/В эфире, шаг привязки, тема, статус эфира. */
-export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClear, canClear, canEdit, extra }: Props) {
+/**
+ * Шапка по прототипу: логотип слева, переключатель «Студия / В эфире» по центру,
+ * справа — иконки темы, мини-виджета (пока неактивна) и настроек, затем
+ * статус-карточка эфира. Шаг привязки и «Очистить» переехали в панель дня.
+ */
+export function Header({ mode, onMode, theme, onToggleTheme, onOpenSettings, extra }: Props) {
   return (
-    <header className="appbar">
-      <span className="logo">RunBiz <b>Ai</b><span className="logo-sep">|</span><span className="logo-sub">COMMERCIAL PLAYER</span></span>
+    <header>
+      <div className="logo">
+        RunBiz <span className="ai">Ai</span><span className="sep">|</span>COMMERCIAL PLAYER
+      </div>
 
-      <div className="seg" role="tablist" aria-label="Режим">
+      <div className="mode-switch" role="tablist" aria-label="Режим">
         <button
           type="button" role="tab" aria-selected={mode === 'studio'}
-          className={mode === 'studio' ? 'on' : ''} onClick={() => onMode('studio')}
+          className={mode === 'studio' ? 'active' : ''} onClick={() => onMode('studio')}
         >Студия</button>
         <button
           type="button" role="tab" aria-selected={mode === 'onair'}
-          className={mode === 'onair' ? 'on' : ''} onClick={() => onMode('onair')}
+          className={`onair${mode === 'onair' ? ' active' : ''}`} onClick={() => onMode('onair')}
         >В эфире</button>
       </div>
 
-      <div className="appbar-tools">
-        <label className="tool">
-          шаг
-          <select
-            value={snap} disabled={!canEdit}
-            onChange={(e) => onSnap(Number(e.target.value))}
-          >
-            {SNAP_OPTIONS.map((m) => <option key={m} value={m}>{m} мин</option>)}
-          </select>
-        </label>
-        <button type="button" className="btn" disabled={!canClear} onClick={onClear}>
-          Очистить
-        </button>
+      <div className="head-right">
         <button
-          type="button" className="btn icon" onClick={onToggleTheme}
+          type="button" className="icon-btn" onClick={onToggleTheme}
           aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
           title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-        >
-          {theme === 'dark' ? '☾' : '☀'}
-        </button>
+        >{theme === 'dark' ? '🌙' : '☀️'}</button>
+        <button
+          type="button" className="icon-btn" disabled
+          aria-label="Свернуть в мини-виджет" title="Мини-виджет — скоро"
+        >⎯</button>
+        <button
+          type="button" className="icon-btn" onClick={onOpenSettings}
+          aria-label="Настройки" title="Настройки"
+        >⚙</button>
+        {extra}
       </div>
-
-      {extra}
     </header>
   );
 }

@@ -10,9 +10,13 @@ interface Props {
   api: StoreApi;
   snap: number;
   canEdit: boolean;
+  onSnap(snap: number): void;
+  onClear(): void;
 }
 
-export function DayEditor({ day, store, api, snap, canEdit }: Props) {
+const SNAP_OPTIONS = [1, 5, 15];
+
+export function DayEditor({ day, store, api, snap, canEdit, onSnap, onClear }: Props) {
   function onHour(field: 'start' | 'end') {
     return (e: ChangeEvent<HTMLInputElement>) => {
       const v = e.target.value;
@@ -20,16 +24,36 @@ export function DayEditor({ day, store, api, snap, canEdit }: Props) {
     };
   }
 
+  const hasBlocks = day.blocks.length > 0;
+
   return (
     <section className="editor" aria-label={`Расписание: ${day.name}`}>
-      <div className="editor-head">
-        <span className="editor-title">{day.name}</span>
-        <label className="hour">с
-          <input type="time" value={day.start} disabled={day.off || !canEdit} onChange={onHour('start')} />
+      <div className="stage-head">
+        <h2>{day.name}</h2>
+        <span className={`badge ${day.off ? 'off' : 'work'}`}>{day.off ? 'ВЫХОДНОЙ' : 'РАБОЧИЙ ДЕНЬ'}</span>
+
+        <div className="hours-edit">
+          <label className="hour">с
+            <input type="time" value={day.start} disabled={day.off || !canEdit} onChange={onHour('start')} />
+          </label>
+          <span>–</span>
+          <label className="hour">до
+            <input type="time" value={day.end} disabled={day.off || !canEdit} onChange={onHour('end')} />
+          </label>
+        </div>
+
+        <div className="spacer" />
+
+        <label className="tool-sel">шаг
+          <select value={snap} disabled={!canEdit} onChange={(e) => onSnap(Number(e.target.value))}>
+            {SNAP_OPTIONS.map((m) => <option key={m} value={m}>{m} мин</option>)}
+          </select>
         </label>
-        <label className="hour">до
-          <input type="time" value={day.end} disabled={day.off || !canEdit} onChange={onHour('end')} />
-        </label>
+        <button
+          type="button" className="hl-btn" disabled={!canEdit || day.off || !hasBlocks}
+          title="Очистить расписание дня" onClick={onClear}
+        >Очистить</button>
+
         <label className="offbox">
           <input
             type="checkbox" checked={day.off} disabled={!canEdit}
@@ -40,7 +64,7 @@ export function DayEditor({ day, store, api, snap, canEdit }: Props) {
       </div>
 
       {day.off ? (
-        <div className="closed">Заведение закрыто — вещания в этот день нет</div>
+        <div className="closed">🌙 Заведение закрыто — вещания в этот день нет</div>
       ) : (
         <ScheduleBody
           win={day} location={{ kind: 'day', id: day.id }}

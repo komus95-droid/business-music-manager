@@ -50,14 +50,14 @@ export function PlaylistLane(props: Props) {
       onDrop={handleDrop}
       onClick={(e) => { if (e.target === laneRef.current) props.onSelect(null); }}
     >
-      <span className="lane-label">♪ Музыка</span>
+      <span className="lane-label">♪ МУЗЫКА</span>
 
       {silence.map((g, i) => {
         const left = timeToFrac(win, g.from);
         const width = spanToFrac(win, g.from, g.to);
         return (
           <div key={`s${i}`} className="silence" style={{ left: pct(left), width: pct(width) }}>
-            {spanMinutes(g.from, g.to) >= 30 && <span>тишина</span>}
+            {spanMinutes(g.from, g.to) >= 30 && <span>⚠ тишина</span>}
           </div>
         );
       })}
@@ -74,7 +74,7 @@ export function PlaylistLane(props: Props) {
         return (
           <div
             key={b.id}
-            className={`block${sel ? ' sel' : ''}${conflict ? ' conflict' : ''}${over ? ' over' : ''}`}
+            className={`block has-play${sel ? ' sel' : ''}${conflict ? ' conflict' : ''}${over ? ' over' : ''}`}
             style={{ left: pct(left), width: pct(width), '--c': PLAYLIST_PALETTE[pl.color] } as CSSProperties}
             draggable={canEdit}
             onDragStart={(e) => setDrag(e, { op: 'move', kind: 'playlist', blockId: b.id })}
@@ -82,16 +82,14 @@ export function PlaylistLane(props: Props) {
             title={`${pl.name} · ${b.start}–${b.end}`}
           >
             <span className="b-play" aria-hidden="true">▶</span>
+            <span className="b-title">{pl.name}</span>
+            <span className="b-time">{b.start}–{b.end}</span>
             <span className="b-wave" aria-hidden="true">
-              {WAVE.map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}
-            </span>
-            <span className="b-meta">
-              <span className="bn">{pl.name}</span>
-              <span className="bt">{b.start}–{b.end}</span>
+              {WAVE.map((hh, i) => <i key={i} style={{ height: `${hh}%` }} />)}
             </span>
             {sel && canEdit && (
               <button
-                type="button" className="bx" aria-label="Удалить блок"
+                type="button" className="b-x" aria-label="Удалить блок"
                 onClick={(e) => { e.stopPropagation(); props.onRemove(b.id); }}
               >×</button>
             )}

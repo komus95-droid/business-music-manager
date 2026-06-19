@@ -40,8 +40,6 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
   const ro = !canEdit || locked;
 
   // ── Предпрослушивание (Чат 8) ──────────────────────────────────────────
-  // Объявление = overlay с дакингом, без перемотки позиции — поэтому play/stop.
-  // Слушать можно и запертое; нельзя — в эфире и без файла.
   const active = !!playback.announcementName && playback.announcementName === a.name && playback.ducked;
   const canPreview = canEdit && !!a.file;
 
@@ -93,10 +91,10 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
   }
 
   return (
-    <section className="editor pe" aria-label={`Объявление: ${a.name}`}>
-      <div className="pe-head">
+    <section className={`pl-editor${locked ? ' locked' : ''}`} aria-label={`Объявление: ${a.name}`}>
+      <div className="pl-top">
         <input
-          className="pe-name" value={a.name} disabled={ro}
+          className="pl-name" value={a.name} disabled={ro}
           aria-label="Название объявления" maxLength={60}
           onChange={(e) => api.setAnnouncementMeta(a.id, { name: e.target.value })}
         />
@@ -111,9 +109,9 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
             />
           ))}
         </div>
-        <span className="pe-total">{a.file ? `${fmtDuration(a.durationSec)} · 1 трек` : 'нет файла'}</span>
+        <span className="pl-total">{a.file ? `${fmtDuration(a.durationSec)} · 1 трек` : 'нет файла'}</span>
         <button
-          type="button" className="btn pe-del" disabled={locked || !canEdit}
+          type="button" className="del-pl" disabled={locked || !canEdit}
           title={locked ? 'Используется в расписании' : 'Удалить объявление'}
           onClick={del}
         >Удалить</button>
@@ -132,15 +130,17 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
         onDragLeave={() => setDz(false)}
         onDrop={onDrop}
       >
-        <span className="ad-ic" aria-hidden="true">🎵</span>
-        <span className="ad-info">
-          <span className="ad-fname">{a.file || '— файл не выбран —'}</span>
-          <span className="ad-fsub">
-            {a.file ? `${fmtDuration(a.durationSec)} · MP3` : (ro ? 'нет файла' : 'перетащите MP3 сюда или нажмите «Импорт»')}
+        <span className="af-info">
+          <span className="af-ic" aria-hidden="true">🎵</span>
+          <span>
+            <span className="af-name">{a.file || '— файл не выбран —'}</span>
+            <span className="af-sub">
+              {a.file ? `${fmtDuration(a.durationSec)} · MP3` : (ro ? 'нет файла' : 'перетащите MP3 сюда или нажмите «Импорт»')}
+            </span>
           </span>
         </span>
         {!ro && (
-          <button type="button" className="btn import" disabled={busy} onClick={importViaDialog}>
+          <button type="button" className="add-track import" disabled={busy} onClick={importViaDialog}>
             {busy ? 'Импорт…' : '📁 Импорт MP3'}
           </button>
         )}
@@ -149,7 +149,7 @@ export function AnnouncementEditor({ announcement: a, store, api, canEdit, onDel
       <div className="ad-vol">
         <span>Громкость объявления</span>
         <input
-          type="range" min={0} max={100} value={a.volume} disabled={ro}
+          type="range" className="slider" min={0} max={100} value={a.volume} disabled={ro}
           aria-label="Громкость объявления"
           onChange={(e) => api.setAnnouncementMeta(a.id, { volume: Number(e.target.value) })}
         />

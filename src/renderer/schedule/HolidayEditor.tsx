@@ -8,9 +8,10 @@ import { ScheduleBody } from './ScheduleBody';
 import { flash } from '../ui/flash';
 
 /**
- * Редактор праздника (Чат 6). Шапка — праздник-специфичная (имя, даты/период,
- * часы, «Отключён»), а шкала ниже — общий `ScheduleBody`, как у дня недели.
- * Пересечение дат с другим праздником — мягко: значок в ленте + тост + плашка.
+ * Редактор праздника (Чат 6). Шапка .stage-head — праздник-специфичная (имя,
+ * даты/период, часы, шаг, очистка, «Отключён», удалить), а шкала ниже —
+ * общий `ScheduleBody`, как у дня недели. Пересечение дат с другим праздником —
+ * мягко: значок в ленте + тост + плашка.
  */
 interface Props {
   holiday: Holiday;
@@ -18,9 +19,12 @@ interface Props {
   api: StoreApi;
   snap: number;
   canEdit: boolean;
+  onSnap(snap: number): void;
+  onClear(): void;
   onDeleted(): void;
 }
 
+const SNAP_OPTIONS = [1, 5, 15];
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 function parseDDMM(v: string): { d: number; m: number } {
@@ -41,7 +45,7 @@ function dateLabel(h: Holiday): string {
   return h.year ? `${base} · ${h.year}` : base;
 }
 
-export function HolidayEditor({ holiday: h, store, api, snap, canEdit, onDeleted }: Props) {
+export function HolidayEditor({ holiday: h, store, api, snap, canEdit, onSnap, onClear, onDeleted }: Props) {
   const conflicts = holidaysConflictingWith(store.holidays, h.id);
 
   /** Применить патч метаданных и мягко предупредить, если возник конфликт дат. */
@@ -82,23 +86,39 @@ export function HolidayEditor({ holiday: h, store, api, snap, canEdit, onDeleted
 
   const from = parseDDMM(h.from);
   const to = parseDDMM(h.to ?? h.from);
+  const hasBlocks = h.blocks.length > 0;
 
   return (
     <section className="editor" aria-label={`Праздник: ${h.name}`}>
-      <div className="editor-head">
+      <div className="stage-head">
         <input
-          className="hol-name-in" value={h.name} disabled={!canEdit}
+          className="hol-title" value={h.name} disabled={!canEdit}
           aria-label="Название праздника"
           onChange={(e) => api.setHolidayMeta(h.id, { name: e.target.value })}
         />
-        <span className={`hol-badge ${h.off ? 'off' : 'work'}`}>{h.off ? 'Отключён' : 'Праздник'}</span>
+        <span className={`badge ${h.off ? 'off' : 'hol'}`}>{h.off ? 'ОТКЛЮЧЁН' : 'ПРАЗДНИК'}</span>
 
-        <label className="hour">с
-          <input type="time" value={h.start} disabled={h.off || !canEdit} onChange={onHour('start')} />
+        <div className="hours-edit">
+          <label className="hour">с
+            <input type="time" value={h.start} disabled={h.off || !canEdit} onChange={onHour('start')} />
+          </label>
+          <span>–</span>
+          <label className="hour">до
+            <input type="time" value={h.end} disabled={h.off || !canEdit} onChange={onHour('end')} />
+          </label>
+        </div>
+
+        <div className="spacer" />
+
+        <label className="tool-sel">шаг
+          <select value={snap} disabled={!canEdit} onChange={(e) => onSnap(Number(e.target.value))}>
+            {SNAP_OPTIONS.map((m) => <option key={m} value={m}>{m} мин</option>)}
+          </select>
         </label>
-        <label className="hour">до
-          <input type="time" value={h.end} disabled={h.off || !canEdit} onChange={onHour('end')} />
-        </label>
+        <button
+          type="button" className="hl-btn" disabled={!canEdit || h.off || !hasBlocks}
+          title="Очистить расписание праздника" onClick={onClear}
+        >Очистить</button>
 
         <label className="offbox">
           <input
@@ -107,7 +127,7 @@ export function HolidayEditor({ holiday: h, store, api, snap, canEdit, onDeleted
           />
           Отключён
         </label>
-        <button type="button" className="btn hol-del" disabled={!canEdit} onClick={del}>Удалить</button>
+        <button type="button" className="hl-del" disabled={!canEdit} onClick={del}>Удалить</button>
       </div>
 
       <div className="hol-dates">
@@ -135,7 +155,7 @@ export function HolidayEditor({ holiday: h, store, api, snap, canEdit, onDeleted
       )}
 
       {h.off ? (
-        <div className="closed">В этот праздник заведение закрыто — вещания нет</div>
+        <div className="closed">🌙 В этот праздник заведение закрыто — вещания нет</div>
       ) : (
         <ScheduleBody
           win={h} location={{ kind: 'holiday', id: h.id }}
@@ -152,7 +172,7 @@ function DateSelect({ d, m, disabled, onD, onM }: {
   onM(e: ChangeEvent<HTMLSelectElement>): void;
 }) {
   return (
-    <span className="date-sel">
+    <span className="date-pick">
       <select value={d} disabled={disabled} aria-label="День" onChange={onD}>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((n) => (
           <option key={n} value={n}>{String(n).padStart(2, '0')}</option>
