@@ -130,3 +130,25 @@ export function snapOffset(off: number, snap: number, edges: number[], threshold
   }
   return Math.round(best);
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// v1.3.0 — масштаб/прокрутка ленты (таймлайн-редактор)
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Уровень масштаба: 'fit' — весь день в ширину; число — пикселей на час. */
+export type Zoom = 'fit' | number;
+
+export interface ZoomPreset { key: Zoom; label: string; }
+export const ZOOM_PRESETS: ZoomPreset[] = [
+  { key: 'fit', label: 'Обзор' },
+  { key: 90, label: '1×' },
+  { key: 180, label: '2×' },
+  { key: 360, label: '4×' },
+  { key: 720, label: '8×' },
+];
+
+/** CSS-ширина внутренней ленты: '100%' для «Обзор», иначе фикс. пиксели. */
+export function timelineWidthCss(zoom: Zoom, spanMin: number): string {
+  if (zoom === 'fit') return '100%';
+  return `${Math.max(1, Math.round((spanMin * zoom) / 60))}px`;
+}

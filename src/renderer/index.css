@@ -604,3 +604,25 @@
 .lane-pl .block .b-time{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.45);align-self:flex-start}
 .lane-an .block.ad .b-sub{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.45);align-self:flex-start}
 .lane-pl .block:not(.sel) .b-time:hover, .lane-an .block.ad:not(.sel) .b-sub:hover{border-bottom-color:#fff}
+
+/* v1.3.0 — таймлайн-редактор: единый фрейм + прокрутка + зум + авто-стек */
+.zoombar{display:flex;align-items:center;gap:6px;padding:8px 18px 2px}
+.zoom-lbl{font-size:10px;letter-spacing:1px;color:var(--txt-dim);font-weight:700;margin-right:4px}
+.zoombar button{font-size:11px;font-weight:700;color:var(--txt-dim);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:7px;padding:5px 11px;cursor:pointer}
+.zoombar button:hover{border-color:var(--line-2)}
+.zoombar button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+.timeline-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;padding:0 18px}
+.timeline{position:relative;height:100%;display:flex;flex-direction:column}
+.timeline .ruler{margin:0;flex-shrink:0}
+.track-frame{flex:1;min-height:0;margin-top:6px;position:relative;display:flex;flex-direction:column;
+  border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.track-frame .lane{border:none;border-radius:0}
+.track-frame .lane-an{border-bottom:1px solid var(--line)}
+
+/* короткие блоки музыки не исчезают; плашки объявлений — фикс. ширина под авто-стек */
+.lane-pl .block{min-width:10px}
+.lane-an .block.ad{width:150px;height:28px}
+.lane-an .block.ad .b-title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lane-an .block.ad .b-sub{font-size:9px}
