@@ -587,3 +587,10 @@
 .hl-btn:disabled{opacity:.4;cursor:not-allowed}
 .hl-del{background:rgba(235,87,87,.12);color:#ff8585;border:1px solid rgba(235,87,87,.35);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .hl-del:disabled{opacity:.4;cursor:not-allowed}
+
+/* v1.2.2 — «ощущение» центральной зоны: без выделения текста, grab-курсор */
+.lanes, .lanes *{ -webkit-user-select:none; user-select:none; }
+.lane{cursor:default}
+.lane-pl .block, .lane-an .block.ad{cursor:grab}
+.lane-pl .block:active, .lane-an .block.ad:active{cursor:grabbing}
+.lane-pl .block .b-x, .lane-an .block.ad .b-x{cursor:pointer}

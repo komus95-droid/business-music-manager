@@ -73,7 +73,7 @@ export function DayList({ week, playlists, currentDayId, onSelect }: Props) {
 
               <div className="d-meta">
                 <span className={`d-dot ${dotCls}`} />
-                {d.off ? 'выходной' : `♪${c.pl} · 📢${c.an}`}
+                {d.off ? 'не вещает' : `♪${c.pl} · 📢${c.an}`}
               </div>
             </button>
           );
