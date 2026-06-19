@@ -51,6 +51,15 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
       </div>
 
       <div className="lanes">
+        <AnnouncementLane
+          win={win} announcements={store.announcements}
+          snap={snap} canEdit={canEdit}
+          selectedId={selected} onSelect={setSelected}
+          onAdd={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
+          onMove={(id, t) => api.moveAnnouncementBlock(location, id, t)}
+          onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
+        />
+
         <PlaylistLane
           win={win} playlists={store.playlists}
           conflictIds={conflictIds} silence={silence}
@@ -58,15 +67,6 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
           selectedId={selected} onSelect={setSelected}
           onAdd={(refId, t) => api.addPlaylistBlock(location, refId, t)}
           onMove={(id, t) => api.movePlaylistBlock(location, id, t)}
-          onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
-        />
-
-        <AnnouncementLane
-          win={win} announcements={store.announcements}
-          snap={snap} canEdit={canEdit}
-          selectedId={selected} onSelect={setSelected}
-          onAdd={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
-          onMove={(id, t) => api.moveAnnouncementBlock(location, id, t)}
           onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
         />
 

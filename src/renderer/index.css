@@ -68,17 +68,31 @@ body {
 
 .daylist {
   background: var(--panel); border-right: 1px solid var(--line);
-  padding: 8px 7px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+  padding: 10px 8px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto;
+}
+.daylist-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .9px; color: var(--muted);
+  padding: 2px 4px 6px;
 }
 .day {
-  text-align: left; border: 1px solid transparent; background: transparent; color: var(--text);
-  padding: 7px 9px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 2px;
+  text-align: left; border: 1px solid var(--line); background: var(--panel2); color: var(--text);
+  padding: 9px 10px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 7px;
 }
-.day:hover { background: var(--panel2); }
-.day.sel { background: var(--panel2); border-color: var(--accent); }
-.day-name { font-size: 13px; font-weight: 500; }
+.day:hover { border-color: var(--line2); }
+.day.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--panel2)); }
+.day.off { opacity: .72; }
+.day-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.day-name { font-size: 13px; font-weight: 700; }
 .day-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .day.off .day-time { color: var(--danger); }
+.day-strip {
+  position: relative; display: block; height: 6px; border-radius: 4px;
+  background: var(--bg); overflow: hidden;
+}
+.day-seg { position: absolute; top: 0; bottom: 0; border-radius: 4px; min-width: 3px; }
+.day-counts { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+.dc-pl { color: var(--accent); font-weight: 600; }
+.dc-sep { opacity: .5; }
 
 .app-center { padding: 12px 14px; overflow: auto; min-width: 0; }
 .onair-note {
@@ -110,12 +124,12 @@ body {
   position: relative; border: 1px dashed var(--line2); border-radius: 9px;
   background: var(--panel); overflow: hidden;
 }
-.lane-pl { height: 104px; margin-bottom: 8px; }
-.lane-an { height: 60px; }
+.lane-an { height: 66px; margin-bottom: 8px; }
+.lane-pl { height: 124px; }
 .lane.drop { border-color: var(--accent); background: rgba(47, 128, 237, .08); }
 .lane-label {
-  position: absolute; left: 9px; top: 6px; font-size: 10px; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .6px; pointer-events: none; z-index: 1;
+  position: absolute; left: 10px; top: 7px; font-size: 11px; color: var(--muted); font-weight: 700;
+  letter-spacing: .4px; pointer-events: none; z-index: 1;
 }
 
 .silence {
@@ -125,37 +139,52 @@ body {
 }
 .silence span { font-size: 10px; color: var(--muted); opacity: .7; }
 
+/* Блок музыки: крупный градиентный с кнопкой play и «волной» */
 .block {
-  position: absolute; top: 24px; bottom: 8px; min-width: 4px;
-  border-radius: 7px; color: #fff; padding: 6px 8px; cursor: grab; overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, .25); box-shadow: inset 3px 0 0 rgba(0, 0, 0, .28);
+  position: absolute; top: 28px; bottom: 12px; min-width: 10px;
+  display: flex; align-items: stretch; cursor: grab; overflow: hidden;
+  border-radius: 11px; color: #fff;
+  background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 52%, #000));
+  border: 1px solid color-mix(in srgb, var(--c) 55%, #000);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .32);
 }
 .block:active { cursor: grabbing; }
-.block.sel { outline: 2px solid var(--text); outline-offset: 1px; }
-.block.conflict { outline: 2px solid var(--danger); outline-offset: 1px; }
+.block.sel { outline: 2px solid var(--text); outline-offset: 2px; }
+.block.conflict { outline: 2px solid var(--danger); outline-offset: 2px; }
 .block.over::after {
-  content: "›"; position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
-  opacity: .7; font-size: 14px;
+  content: "›"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  opacity: .7; font-size: 14px; z-index: 2;
 }
-.bn { display: block; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bt { display: block; font-size: 10px; opacity: .85; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.b-play {
+  flex: 0 0 auto; width: 30px; display: grid; place-items: center; font-size: 12px;
+  background: rgba(255, 255, 255, .2); border-right: 1px solid rgba(255, 255, 255, .15);
+}
+.b-wave { position: absolute; inset: 8px 10px 8px 40px; display: flex; align-items: center; gap: 2px; opacity: .3; pointer-events: none; }
+.b-wave i { flex: 1 1 0; min-width: 1px; background: #fff; border-radius: 1px; }
+.b-meta { position: relative; z-index: 1; flex: 1 1 auto; min-width: 0; align-self: center; padding: 0 10px; }
+.bn { display: block; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bt { display: block; font-size: 10px; opacity: .92; margin-top: 2px; font-variant-numeric: tabular-nums; }
 
-.pin { position: absolute; top: 16px; transform: translateX(-50%); cursor: grab; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.pin:active { cursor: grabbing; }
-.pin .dot { width: 13px; height: 13px; border-radius: 3px; transform: rotate(45deg); border: 1px solid rgba(0, 0, 0, .3); }
-.pin .lbl {
-  font-size: 10px; color: var(--text); background: var(--panel2);
-  border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px;
-  white-space: nowrap; font-variant-numeric: tabular-nums;
+/* Объявление: цветная плашка, закреплённая по времени */
+.plaque {
+  position: absolute; top: 13px; display: flex; align-items: center; gap: 6px;
+  max-width: 230px; padding: 6px 9px; border-radius: 9px; color: #fff; cursor: grab; white-space: nowrap;
+  background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 52%, #000));
+  border: 1px solid color-mix(in srgb, var(--c) 55%, #000);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .3);
 }
-.pin.sel .lbl { outline: 1px solid var(--text); }
+.plaque:active { cursor: grabbing; }
+.pq-ic { font-size: 11px; flex: 0 0 auto; }
+.pq-name { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.pq-time { font-size: 10px; opacity: .92; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.plaque.sel { outline: 2px solid var(--text); outline-offset: 2px; }
 
 .bx {
   position: absolute; top: 3px; right: 3px; width: 16px; height: 16px;
   border: 0; border-radius: 4px; background: rgba(0, 0, 0, .35); color: #fff;
   font-size: 13px; line-height: 1; cursor: pointer; display: grid; place-items: center;
 }
-.pin .bx { position: static; }
+.plaque .bx { position: static; margin-left: 2px; width: 15px; height: 15px; }
 
 .warn {
   margin: 9px 0 0; font-size: 11px; color: var(--danger);
@@ -165,6 +194,7 @@ body {
 
 /* ── Библиотека ───────────────────────────────────────── */
 .library { background: var(--panel); border-left: 1px solid var(--line); padding: 10px; overflow-y: auto; }
+.lib-title { font-size: 11px; font-weight: 800; letter-spacing: .9px; color: var(--muted); margin: 0 0 9px; }
 .library h4 { margin: 0 0 7px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 500; }
 .library h4:not(:first-child) { margin-top: 14px; }
 .lib-empty { font-size: 11px; color: var(--muted); margin: 0 0 6px; }

@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { DragEvent } from 'react';
+import type { CSSProperties, DragEvent } from 'react';
 import type { Announcement, Id, DayWindow } from '@shared';
 import { ANNOUNCEMENT_PALETTE } from '@shared';
 import { timeToFrac, fracToTime } from './timeline';
@@ -43,7 +43,7 @@ export function AnnouncementLane(props: Props) {
       onDrop={handleDrop}
       onClick={(e) => { if (e.target === laneRef.current) props.onSelect(null); }}
     >
-      <span className="lane-label">Объявления</span>
+      <span className="lane-label">📢 Объявления</span>
 
       {win.blocks.filter((b) => b.kind === 'announcement').map((b) => {
         if (b.kind !== 'announcement') return null;
@@ -53,15 +53,16 @@ export function AnnouncementLane(props: Props) {
         return (
           <div
             key={b.id}
-            className={`pin${sel ? ' sel' : ''}`}
-            style={{ left: pct(timeToFrac(win, b.at)) }}
+            className={`plaque${sel ? ' sel' : ''}`}
+            style={{ left: pct(timeToFrac(win, b.at)), '--c': ANNOUNCEMENT_PALETTE[an.color] } as CSSProperties}
             draggable={canEdit}
             onDragStart={(e) => setDrag(e, { op: 'move', kind: 'announcement', blockId: b.id })}
             onClick={(e) => { e.stopPropagation(); props.onSelect(b.id); }}
             title={`${an.name} · ${b.at}`}
           >
-            <span className="dot" style={{ background: ANNOUNCEMENT_PALETTE[an.color] }} />
-            <span className="lbl">{an.name} · {b.at}</span>
+            <span className="pq-ic" aria-hidden="true">📢</span>
+            <span className="pq-name">{an.name}</span>
+            <span className="pq-time">{b.at}</span>
             {sel && canEdit && (
               <button
                 type="button" className="bx" aria-label="Удалить объявление"

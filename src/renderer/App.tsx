@@ -96,6 +96,7 @@ function AppShell({ api, store }: ShellProps) {
       <div className="app-body">
         <DayList
           week={store.week}
+          playlists={store.playlists}
           currentDayId={view.type === 'day' ? view.id : null}
           onSelect={(id) => setView({ type: 'day', id })}
         />

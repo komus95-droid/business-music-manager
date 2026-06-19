@@ -83,6 +83,7 @@ export function LibraryPanel({
 
   return (
     <aside className="library" aria-label="Библиотека">
+      <div className="lib-title">БИБЛИОТЕКА</div>
       <div className="lib-toolbar">
         <input
           className="lib-search" type="search" placeholder="🔍 Поиск…"
@@ -100,7 +101,7 @@ export function LibraryPanel({
       </div>
 
       <Section
-        title="Плейлисты" kind="playlist"
+        title="Музыкальные плейлисты" kind="playlist"
         rows={process(playlistRows(store), search, sort)}
         collapsed={collapsed.has('pl')} onToggle={() => toggle('pl')}
         canDrag={canDrag} selectedId={selectedPlaylistId}

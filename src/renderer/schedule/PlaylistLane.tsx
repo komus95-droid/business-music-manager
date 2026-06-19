@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { DragEvent } from 'react';
+import type { CSSProperties, DragEvent } from 'react';
 import type { Playlist, Id, SilenceGap, DayWindow } from '@shared';
 import { PLAYLIST_PALETTE, spanMinutes, offsetFromDayStart } from '@shared';
 import { timeToFrac, spanToFrac, fracToTime } from './timeline';
@@ -20,6 +20,10 @@ interface Props {
 }
 
 const pct = (frac: number) => `${frac * 100}%`;
+
+/** Декоративная «волна» внутри блока музыки (детерминированные высоты). */
+const WAVE = Array.from({ length: 28 }, (_, i) =>
+  34 + Math.round(46 * Math.abs(Math.sin(i * 1.27) * Math.cos(i * 0.6))));
 
 export function PlaylistLane(props: Props) {
   const { win, playlists, conflictIds, silence, snap, canEdit, selectedId } = props;
@@ -46,7 +50,7 @@ export function PlaylistLane(props: Props) {
       onDrop={handleDrop}
       onClick={(e) => { if (e.target === laneRef.current) props.onSelect(null); }}
     >
-      <span className="lane-label">Плейлисты</span>
+      <span className="lane-label">♪ Музыка</span>
 
       {silence.map((g, i) => {
         const left = timeToFrac(win, g.from);
@@ -71,14 +75,20 @@ export function PlaylistLane(props: Props) {
           <div
             key={b.id}
             className={`block${sel ? ' sel' : ''}${conflict ? ' conflict' : ''}${over ? ' over' : ''}`}
-            style={{ left: pct(left), width: pct(width), background: PLAYLIST_PALETTE[pl.color] }}
+            style={{ left: pct(left), width: pct(width), '--c': PLAYLIST_PALETTE[pl.color] } as CSSProperties}
             draggable={canEdit}
             onDragStart={(e) => setDrag(e, { op: 'move', kind: 'playlist', blockId: b.id })}
             onClick={(e) => { e.stopPropagation(); props.onSelect(b.id); }}
             title={`${pl.name} · ${b.start}–${b.end}`}
           >
-            <span className="bn">{pl.name}</span>
-            <span className="bt">{b.start}–{b.end}</span>
+            <span className="b-play" aria-hidden="true">▶</span>
+            <span className="b-wave" aria-hidden="true">
+              {WAVE.map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}
+            </span>
+            <span className="b-meta">
+              <span className="bn">{pl.name}</span>
+              <span className="bt">{b.start}–{b.end}</span>
+            </span>
             {sel && canEdit && (
               <button
                 type="button" className="bx" aria-label="Удалить блок"
