@@ -21,7 +21,7 @@ const SNAP_OPTIONS = [1, 5, 15];
 export function Header({ mode, onMode, theme, onToggleTheme, snap, onSnap, onClear, canClear, canEdit, extra }: Props) {
   return (
     <header className="appbar">
-      <span className="logo">Commercial <b>Player</b></span>
+      <span className="logo">RunBiz <b>Ai</b><span className="logo-sep">|</span><span className="logo-sub">COMMERCIAL PLAYER</span></span>
 
       <div className="seg" role="tablist" aria-label="Режим">
         <button

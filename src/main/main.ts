@@ -236,58 +236,12 @@ function createWindow(): BrowserWindow {
     win.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
 
-  // ── ДИАГНОСТИКА (Чат 10, v1.0.5): показываем точную ошибку нативным окном.
-  // Всё на стороне main — не зависит ни от preload, ни от рендерера.
-  const BUILD = 'v1.0.9';
-  const consoleErr: string[] = [];
-  let errDlgTimer: NodeJS.Timeout | null = null;
-  win.webContents.on('console-message', (_e, level, message, line, source) => {
-    if (level >= 2) consoleErr.push(`[${level === 3 ? 'ERR' : 'WARN'}] ${message}` + (source ? ` (${source}:${line})` : ''));
-    // ДИАГНОСТИКА: любая ОШИБКА (level 3) в консоли — показываем диалогом
-    // последние сообщения. Ловит падение при нажатии play (звук/аудит/эфир).
-    if (level === 3 && !errDlgTimer) {
-      errDlgTimer = setTimeout(() => {
-        errDlgTimer = null;
-        dialog.showErrorBox(`Commercial Player ${BUILD} — ошибка в окне`, consoleErr.slice(-12).join('\n'));
-      }, 700);
-    }
-  });
-  // Падение самого процесса рендерера (тогда окно чернеет без текста ошибки).
+  // Если рендерер всё же упадёт — короткое уведомление вместо чёрного окна.
   win.webContents.on('render-process-gone', (_e, details) => {
-    dialog.showErrorBox(
-      `Commercial Player ${BUILD} — рендерер упал`,
-      `Причина: ${details.reason} (код выхода ${details.exitCode})\n\nПоследние сообщения:\n${consoleErr.slice(-12).join('\n') || '(пусто)'}`,
-    );
-  });
-  win.webContents.on('preload-error', (_e, preloadPath, error) => {
-    dialog.showErrorBox('Commercial Player — ошибка preload', `${preloadPath}\n\n${error.stack || String(error)}`);
-  });
-  win.webContents.on('did-finish-load', () => {
-    setTimeout(() => {
-      void (async () => {
-        try {
-          const kids = await win.webContents.executeJavaScript(
-            'document.getElementById("root") ? document.getElementById("root").childElementCount : -1',
-          );
-          if (kids === 0 || kids === -1) {
-            const apiType = await win.webContents.executeJavaScript('typeof window.api');
-            dialog.showErrorBox(
-              `Commercial Player ${BUILD} — интерфейс не отрисовался`,
-              `window.api (мост preload): ${apiType}\n#root детей: ${kids}\n\n` +
-              `Ошибки/предупреждения консоли:\n${consoleErr.join('\n') || '(пусто)'}`,
-            );
-          }
-        } catch (e) {
-          dialog.showErrorBox('Commercial Player — ошибка самодиагностики', String(e));
-        }
-      })();
-    }, 3000);
+    dialog.showErrorBox('Commercial Player', `Окно аварийно завершилось (${details.reason}). Перезапустите приложение.`);
   });
 
-  win.once('ready-to-show', () => {
-    win.setTitle(`Commercial Player ${BUILD}`); // версия видна в заголовке окна
-    win.show();
-  });
+  win.once('ready-to-show', () => win.show());
   return win;
 }
 

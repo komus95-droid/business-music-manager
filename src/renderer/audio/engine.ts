@@ -262,7 +262,6 @@ export class AudioEngine {
 
   private startTrack(index: number, offsetSec: number, fadeSec: number, dir: Fading): void {
     const t = this.req!.tracks[index];
-    console.warn('[AUDIO] старт трека:', t.url); // диагностика: видеть попытку проигрывания
     const howl = new Howl({ src: [t.url], html5: true, preload: true, format: ['mp3'] });
     howl.once('loaderror', (_id: number, err: unknown) =>
       console.error('[AUDIO] Ошибка загрузки трека:', t.url, err));
