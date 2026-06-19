@@ -238,23 +238,26 @@ function createWindow(): BrowserWindow {
 
   // ── ДИАГНОСТИКА (Чат 10, v1.0.5): показываем точную ошибку нативным окном.
   // Всё на стороне main — не зависит ни от preload, ни от рендерера.
-  const BUILD = 'v1.0.7';
+  const BUILD = 'v1.0.8';
   const consoleErr: string[] = [];
-  const audioLog: string[] = [];
-  let audioDlgTimer: NodeJS.Timeout | null = null;
+  let errDlgTimer: NodeJS.Timeout | null = null;
   win.webContents.on('console-message', (_e, level, message, line, source) => {
     if (level >= 2) consoleErr.push(`[${level === 3 ? 'ERR' : 'WARN'}] ${message}` + (source ? ` (${source}:${line})` : ''));
-    // ДИАГНОСТИКА ЗВУКА: собираем строки [AUDIO]; при ошибке показываем диалог
-    // с последними событиями (какой файл пытались играть и что не так).
-    if (message.includes('[AUDIO]')) {
-      audioLog.push(message);
-      if (message.includes('Ошибка') && !audioDlgTimer) {
-        audioDlgTimer = setTimeout(() => {
-          audioDlgTimer = null;
-          dialog.showErrorBox('Commercial Player — диагностика звука', audioLog.slice(-10).join('\n'));
-        }, 800);
-      }
+    // ДИАГНОСТИКА: любая ОШИБКА (level 3) в консоли — показываем диалогом
+    // последние сообщения. Ловит падение при нажатии play (звук/аудит/эфир).
+    if (level === 3 && !errDlgTimer) {
+      errDlgTimer = setTimeout(() => {
+        errDlgTimer = null;
+        dialog.showErrorBox(`Commercial Player ${BUILD} — ошибка в окне`, consoleErr.slice(-12).join('\n'));
+      }, 700);
     }
+  });
+  // Падение самого процесса рендерера (тогда окно чернеет без текста ошибки).
+  win.webContents.on('render-process-gone', (_e, details) => {
+    dialog.showErrorBox(
+      `Commercial Player ${BUILD} — рендерер упал`,
+      `Причина: ${details.reason} (код выхода ${details.exitCode})\n\nПоследние сообщения:\n${consoleErr.slice(-12).join('\n') || '(пусто)'}`,
+    );
   });
   win.webContents.on('preload-error', (_e, preloadPath, error) => {
     dialog.showErrorBox('Commercial Player — ошибка preload', `${preloadPath}\n\n${error.stack || String(error)}`);
