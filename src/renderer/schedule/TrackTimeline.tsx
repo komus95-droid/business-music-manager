@@ -161,8 +161,7 @@ export function TrackTimeline(props: Props) {
       onClick={(e) => { if (e.target === trackRef.current) props.onSelect(null); }}
     >
       <span className="ads-rail-lbl">📢 ОБЪЯВЛЕНИЯ</span>
-      <span className="pl-rail-lbl" style={{ top: sepTop + 5 }}>♪ МУЗЫКА</span>
-      <div className="rail-sep" style={{ top: sepTop }} />
+      <span className="pl-rail-lbl" style={{ top: sepTop + 3 }}>♪ МУЗЫКА</span>
 
       {/* тишина */}
       {silence.map((g, i) => (
