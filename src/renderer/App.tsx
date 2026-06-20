@@ -4,6 +4,7 @@ import { conflictingHolidayIds, MAX_HOLIDAYS } from '@shared';
 import { useStore } from './state/useStore';
 import type { StoreApi } from './state/useStore';
 import { AudioProvider, useAudio } from './audio/AudioProvider';
+import { buildAnnouncementRequest } from './audio';
 import { useOnAir } from './onair/useOnAir';
 import { OnAirCard } from './onair/OnAirCard';
 import { Header } from './components/Header';
@@ -80,6 +81,11 @@ function AppShell({ api, store }: ShellProps) {
   function newPlaylist() { setView({ type: 'playlist', id: api.addPlaylist() }); }
   function newAnnouncement() { setView({ type: 'announcement', id: api.addAnnouncement() }); }
   function backToWeek() { setView({ type: 'day', id: 'mon' }); }
+
+  function previewAnnouncement(id: string) {
+    const a = store.announcements.find((x) => x.id === id);
+    if (a && a.file) engine.playAnnouncement(buildAnnouncementRequest(store.settings.mediaPath, a));
+  }
 
   function addHoliday() {
     const id = api.addHoliday();
@@ -163,6 +169,8 @@ function AppShell({ api, store }: ShellProps) {
           onOpenAnnouncement={(id) => setView({ type: 'announcement', id })}
           onNewPlaylist={newPlaylist}
           onNewAnnouncement={newAnnouncement}
+          canPreview={canEdit}
+          onPreviewAnnouncement={previewAnnouncement}
         />
       </div>
 

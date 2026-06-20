@@ -659,3 +659,31 @@
   .lane-pl .block .b-play{display:none}
   .lane-pl .block .b-title{display:none}
 }
+
+/* ===== v1.3.2 ===== */
+/* A (решительно). Один очевидный фрейм: заметная внешняя рамка, дорожки без
+   фона/границ, между рельсами — тонкий ПУНКТИР (как .track в прототипе),
+   «тишина» приглушена, чтобы музыкальная дорожка не читалась как отдельная коробка */
+.track-frame{border:1px solid var(--line-2)}
+.track-frame .lane{background:none !important;border:none !important;border-radius:0 !important}
+.track-frame .lane.lane-an{border-bottom:1px dashed var(--line) !important}
+.silence{
+  border:1px dashed rgba(235,87,87,.40);
+  background:repeating-linear-gradient(45deg,rgba(235,87,87,.10),rgba(235,87,87,.10) 7px,rgba(235,87,87,.02) 7px,rgba(235,87,87,.02) 14px);
+}
+.silence span{color:#ff9b9b;opacity:.85}
+
+/* C. Текст на блоках появляется раньше (узкие — раньше показывают название) */
+@container (max-width: 150px){ .lane-pl .block .b-wave{display:none} }
+@container (max-width: 92px){ .lane-pl .block .b-time{display:none} }
+@container (max-width: 70px){ .lane-pl .block .b-title{font-size:10.5px} }
+@container (max-width: 46px){
+  .lane-pl .block.has-play{padding-left:8px}
+  .lane-pl .block .b-play{display:none}
+  .lane-pl .block .b-title{display:none}
+}
+
+/* кнопка прослушивания объявления в библиотеке */
+.a-prev{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+  border:none;font-size:9px;display:grid;place-items:center;flex-shrink:0;cursor:pointer}
+.a-prev:hover{background:var(--accent);color:#fff}

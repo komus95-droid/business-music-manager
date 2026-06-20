@@ -25,6 +25,8 @@ interface Props {
   onOpenAnnouncement(id: Id): void;
   onNewPlaylist(): void;
   onNewAnnouncement(): void;
+  canPreview: boolean;
+  onPreviewAnnouncement(id: Id): void;
 }
 
 type SortKey = 'name' | 'dur' | 'use';
@@ -70,6 +72,7 @@ function process(rows: RowVM[], search: string, sort: SortKey): RowVM[] {
 export function LibraryPanel({
   store, canDrag, selectedPlaylistId, selectedAnnouncementId,
   onOpenPlaylist, onOpenAnnouncement, onNewPlaylist, onNewAnnouncement,
+  canPreview, onPreviewAnnouncement,
 }: Props) {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('name');
@@ -117,6 +120,7 @@ export function LibraryPanel({
           collapsed={collapsed.has('ad')} onToggle={() => toggle('ad')}
           canDrag={canDrag} selectedId={selectedAnnouncementId}
           onOpen={onOpenAnnouncement} onNew={onNewAnnouncement}
+          onPreview={canPreview ? onPreviewAnnouncement : undefined}
           newLabel="+ новое объявление"
           emptyHint={search ? 'Ничего не найдено.' : 'Пусто — создайте объявление.'}
         />
@@ -126,7 +130,7 @@ export function LibraryPanel({
 }
 
 function Section({
-  title, kind, rows, collapsed, onToggle, canDrag, selectedId, onOpen, onNew, newLabel, emptyHint,
+  title, kind, rows, collapsed, onToggle, canDrag, selectedId, onOpen, onNew, newLabel, emptyHint, onPreview,
 }: {
   title: string;
   kind: BlockKind;
@@ -139,6 +143,7 @@ function Section({
   onNew(): void;
   newLabel: string;
   emptyHint: string;
+  onPreview?: (id: Id) => void;
 }) {
   const cls = kind === 'playlist' ? 'pl' : 'ad';
   const icon = kind === 'playlist' ? '♪' : '📢';
@@ -171,6 +176,12 @@ function Section({
                 <span className="ic" aria-hidden="true">{icon}</span>
                 <span className="a-name">{r.name}</span>
                 {r.used && <span className="a-used" title="Установлен в расписании">📌</span>}
+                {onPreview && r.draggable && (
+                  <button
+                    type="button" className="a-prev" title="Прослушать объявление"
+                    onClick={(e) => { e.stopPropagation(); onPreview(r.id); }}
+                  >▶</button>
+                )}
                 <span className="dur">{r.durLabel}</span>
               </div>
             );
