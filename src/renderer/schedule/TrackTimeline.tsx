@@ -29,6 +29,7 @@ interface Props {
   snap: number;
   canEdit: boolean;
   selectedId: Id | null;
+  activeAnnId: Id | null;
   playheadFrac: number;
   showPlayhead: boolean;
   onSelect(id: Id | null): void;
@@ -154,7 +155,7 @@ export function TrackTimeline(props: Props) {
     <div
       ref={trackRef}
       className="track single"
-      style={{ height: trackH, flex: 'none' }}
+      style={{ minHeight: trackH }}
       onDragOver={onDragOver}
       onDragLeave={() => { trackRef.current?.classList.remove('drop'); hideGuide(); }}
       onDrop={onDrop}
@@ -218,7 +219,7 @@ export function TrackTimeline(props: Props) {
         return (
           <div key={b.id}>
             <div className="ad-pin" style={{ left: pos.pinPx, top: AD_TOP - 2, height: musicTop - AD_TOP + 2 }} aria-hidden="true" />
-            <div className={`block ad${sel ? ' sel' : ''}`}
+            <div className={`block ad${sel ? ' sel' : ''}${b.id === props.activeAnnId ? ' firing' : ''}`}
               style={{ left: pos.leftPx, top: AD_TOP + pos.row * AD_ROW_H, width: PLAQUE_W, height: 26, '--c': ANNOUNCEMENT_PALETTE[an.color] } as CSSProperties}
               draggable={canEdit}
               onDragStart={(e) => setDrag(e, { op: 'move', kind: 'announcement', blockId: b.id })}

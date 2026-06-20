@@ -23,6 +23,7 @@ export interface DayAudition {
   spanSec: number;
   frac: number;
   nowLabel: string | null;
+  activeAnnId: Id | null;
   playPause(): void;
   stop(): void;
   seek(sec: number): void;
@@ -45,6 +46,8 @@ export function useDayAudition(
   const clockRef = useRef(0);
   const activeBlockRef = useRef<Id | null>(null);
   const firedRef = useRef<Set<Id>>(new Set()); // объявления, уже сыгранные в этом проходе
+  const [firing, setFiring] = useState<{ id: Id; name: string } | null>(null); // объявление в эфире сейчас (индикатор)
+  const annClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastRef = useRef(0);
   const winRef = useRef(win); winRef.current = win;
@@ -82,7 +85,7 @@ export function useDayAudition(
         activeBlockRef.current = b.id;
       }
     } else {
-      if (activeBlockRef.current !== null) engine.stop();
+      if (activeBlockRef.current !== null) engine.stopMusic(); // глушим только музыку — объявление продолжает играть
       activeBlockRef.current = null;
     }
   }, [blockAt, engine]);
@@ -117,6 +120,9 @@ export function useDayAudition(
       if (e.atSec > prev && e.atSec <= c && !firedRef.current.has(e.id)) {
         firedRef.current.add(e.id);
         engine.playAnnouncement(buildAnnouncementRequest(storeRef.current.settings.mediaPath, e.ann));
+        setFiring({ id: e.id, name: e.ann.name });
+        if (annClearRef.current) clearTimeout(annClearRef.current);
+        annClearRef.current = setTimeout(() => setFiring(null), Math.max(1, e.ann.durationSec) * 1000);
       }
     }
   }, [engine, stopTicker, syncToClock, annEvents]);
@@ -144,6 +150,7 @@ export function useDayAudition(
     stopTicker(); setPlaying(false);
     engine.stop(); activeBlockRef.current = null;
     clockRef.current = 0; setClockSec(0); firedRef.current = new Set();
+    setFiring(null); if (annClearRef.current) clearTimeout(annClearRef.current);
   }, [engine, stopTicker]);
 
   const seek = useCallback((sec: number) => {
@@ -156,6 +163,7 @@ export function useDayAudition(
   useEffect(() => {
     stopTicker(); setPlaying(false);
     clockRef.current = 0; setClockSec(0); firedRef.current = new Set();
+    setFiring(null); if (annClearRef.current) clearTimeout(annClearRef.current);
     if (activeBlockRef.current !== null) { engine.stop(); activeBlockRef.current = null; }
   }, [ownerKey, enabled, engine, stopTicker]);
 
@@ -170,7 +178,8 @@ export function useDayAudition(
     clockSec,
     spanSec,
     frac: Math.max(0, Math.min(clockSec / spanSec, 1)),
-    nowLabel: cur && cur.pl ? cur.pl.name : null,
+    nowLabel: firing ? `\u{1F4E2} ${firing.name}` : (cur && cur.pl ? cur.pl.name : null),
+    activeAnnId: firing ? firing.id : null,
     playPause, stop, seek,
   };
 }

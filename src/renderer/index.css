@@ -730,3 +730,9 @@
 /* адаптив узких музыкальных блоков (container queries) */
 @container (max-width: 150px){ .track .block.has-play .b-wave{display:none} }
 @container (max-width: 104px){ .track .block.has-play .b-time{display:none} }
+
+/* ===== v1.3.4 — высота дорожки на всё место + индикатор играющего объявления ===== */
+.timeline-wrap{flex:1}
+.track.single{flex:1 !important;min-height:0 !important}
+@keyframes annpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 5px rgba(255,255,255,0)}}
+.track .block.ad.firing{outline:2px solid #fff;outline-offset:-1px;animation:annpulse 1s ease-in-out infinite;z-index:7}

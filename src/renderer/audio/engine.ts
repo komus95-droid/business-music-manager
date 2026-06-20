@@ -163,6 +163,13 @@ export class AudioEngine {
     this.emit();
   }
 
+  /** Заглушить ТОЛЬКО музыку — объявление и его дакинг не трогаем (паузы «тишины» в аудите). */
+  stopMusic(): void {
+    this.hardStopMusic();
+    if (this.annRefCount === 0) this.status = 'idle';
+    this.emit();
+  }
+
   /** Конец рабочего дня — плавное затухание на AudioSettings.endOfDayFadeSec. */
   fadeOutAndStop(): void {
     this.stop({ fadeSec: this.audio.endOfDayFadeSec });

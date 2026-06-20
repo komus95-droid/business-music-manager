@@ -67,7 +67,7 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             win={win} store={store} audio={store.audio}
             snap={snap} canEdit={canEdit}
             selectedId={selected} onSelect={setSelected}
-            playheadFrac={audition.frac} showPlayhead={canEdit}
+            playheadFrac={audition.frac} showPlayhead={canEdit} activeAnnId={audition.activeAnnId}
             onAddPlaylist={(refId, t) => api.addPlaylistBlock(location, refId, t)}
             onMovePlaylist={(id, t) => api.movePlaylistBlock(location, id, t)}
             onAddAnnouncement={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
