@@ -56,7 +56,7 @@ function edgeBlocks(win: DayWindow): EdgeBlock[] {
     : { kind: 'announcement' as const, id: b.id, start: b.at, at: b.at });
 }
 
-export function Timeline(props: Props) {
+export function TrackTimeline(props: Props) {
   const { win, store, audio, snap, canEdit, selectedId } = props;
   const trackRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);

@@ -4,7 +4,7 @@ import { findPlaylistOverlaps } from '@shared';
 import type { StoreApi } from '../state/useStore';
 import { useAudio } from '../audio/AudioProvider';
 import { MiniTransport } from '../audio/MiniTransport';
-import { Timeline } from './Timeline';
+import { TrackTimeline } from './TrackTimeline';
 import { TimePopover } from './TimePopover';
 import type { TimeEdit } from './TimePopover';
 import { hourTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS } from './timeline';
@@ -63,7 +63,7 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             ))}
           </div>
 
-          <Timeline
+          <TrackTimeline
             win={win} store={store} audio={store.audio}
             snap={snap} canEdit={canEdit}
             selectedId={selected} onSelect={setSelected}
