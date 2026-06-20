@@ -27,6 +27,7 @@ export interface DayAudition {
   playPause(): void;
   stop(): void;
   seek(sec: number): void;
+  previewSeek(sec: number): void;
 }
 
 interface AnnEvent { id: Id; atSec: number; ann: Announcement; }
@@ -157,8 +158,16 @@ export function useDayAudition(
     const c = Math.max(0, Math.min(sec, spanRef.current));
     clockRef.current = c; setClockSec(c);
     rearm(c);
-    if (playing) syncToClock(c, true);
-  }, [playing, syncToClock, rearm]);
+    if (playing) { syncToClock(c, true); startTicker(); }
+  }, [playing, syncToClock, rearm, startTicker]);
+
+  // «Лёгкая» перемотка во время перетаскивания плейхеда: двигаем только визуально
+  // и замораживаем продвижение, НЕ трогая Howler (фиксация звука — в seek на отпускании).
+  const previewSeek = useCallback((sec: number) => {
+    stopTicker();
+    const c = Math.max(0, Math.min(sec, spanRef.current));
+    clockRef.current = c; setClockSec(c);
+  }, [stopTicker]);
 
   useEffect(() => {
     stopTicker(); setPlaying(false);
@@ -180,6 +189,6 @@ export function useDayAudition(
     frac: Math.max(0, Math.min(clockSec / spanSec, 1)),
     nowLabel: firing ? `\u{1F4E2} ${firing.name}` : (cur && cur.pl ? cur.pl.name : null),
     activeAnnId: firing ? firing.id : null,
-    playPause, stop, seek,
+    playPause, stop, seek, previewSeek,
   };
 }

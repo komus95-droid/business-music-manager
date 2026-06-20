@@ -7,7 +7,7 @@ import { MiniTransport } from '../audio/MiniTransport';
 import { TrackTimeline } from './TrackTimeline';
 import { TimePopover } from './TimePopover';
 import type { TimeEdit } from './TimePopover';
-import { hourTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS } from './timeline';
+import { hourTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS, offsetToHHMM } from './timeline';
 import type { Zoom } from './timeline';
 import { useDayAudition } from './useDayAudition';
 
@@ -68,6 +68,8 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             snap={snap} canEdit={canEdit}
             selectedId={selected} onSelect={setSelected}
             playheadFrac={audition.frac} showPlayhead={canEdit} activeAnnId={audition.activeAnnId}
+            playheadLabel={offsetToHHMM(win, audition.clockSec / 60)} spanSec={audition.spanSec}
+            canScrub={canEdit} onScrubPreview={audition.previewSeek} onScrubCommit={audition.seek}
             onAddPlaylist={(refId, t) => api.addPlaylistBlock(location, refId, t)}
             onMovePlaylist={(id, t) => api.movePlaylistBlock(location, id, t)}
             onAddAnnouncement={(refId, t) => api.addAnnouncementBlock(location, refId, t)}

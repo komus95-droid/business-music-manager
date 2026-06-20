@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties, DragEvent } from 'react';
+import type { CSSProperties, DragEvent, MouseEvent as ReactMouseEvent } from 'react';
 import type { PersistedStore, Id, DayWindow, AudioSettings } from '@shared';
 import {
   PLAYLIST_PALETTE, ANNOUNCEMENT_PALETTE,
@@ -32,6 +32,11 @@ interface Props {
   activeAnnId: Id | null;
   playheadFrac: number;
   showPlayhead: boolean;
+  playheadLabel: string;
+  spanSec: number;
+  canScrub: boolean;
+  onScrubPreview(sec: number): void;
+  onScrubCommit(sec: number): void;
   onSelect(id: Id | null): void;
   onAddPlaylist(refId: Id, t: ReturnType<typeof offsetToHHMM>): void;
   onMovePlaylist(id: Id, t: ReturnType<typeof offsetToHHMM>): void;
@@ -61,6 +66,7 @@ export function TrackTimeline(props: Props) {
   const { win, store, audio, snap, canEdit, selectedId } = props;
   const trackRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);
+  const suppressClickRef = useRef(false);
   const span = windowSpan(win);
 
   const [width, setWidth] = useState(0);
@@ -151,15 +157,63 @@ export function TrackTimeline(props: Props) {
     }
   }
 
+  // D — панорамирование: тащим фон (пустоту) → прокрутка ленты; за блок/плейхед — нет
+  function onTrackMouseDown(e: ReactMouseEvent) {
+    if (e.button !== 0) return;
+    const t = e.target as HTMLElement;
+    if (t.closest('.block') || t.closest('.playhead')) return;
+    const scroller = trackRef.current?.closest('.timeline-wrap') as HTMLElement | null;
+    if (!scroller) return;
+    const startX = e.clientX;
+    const startScroll = scroller.scrollLeft;
+    let moved = false;
+    trackRef.current?.classList.add('panning');
+    const move = (ev: globalThis.MouseEvent) => {
+      const dx = ev.clientX - startX;
+      if (Math.abs(dx) > 3) moved = true;
+      scroller.scrollLeft = startScroll - dx;
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      trackRef.current?.classList.remove('panning');
+      if (moved) { suppressClickRef.current = true; setTimeout(() => { suppressClickRef.current = false; }, 0); }
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+
+  // F — перетаскивание плейхеда (перемотка): визуально во время, фиксация звука на отпускании
+  function onScrubDown(e: ReactMouseEvent) {
+    if (!props.canScrub) return;
+    e.preventDefault(); e.stopPropagation();
+    const el = trackRef.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const toSec = (clientX: number) => {
+      const frac = Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
+      return frac * props.spanSec;
+    };
+    props.onScrubPreview(toSec(e.clientX));
+    const move = (ev: globalThis.MouseEvent) => props.onScrubPreview(toSec(ev.clientX));
+    const up = (ev: globalThis.MouseEvent) => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      props.onScrubCommit(toSec(ev.clientX));
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+
   return (
     <div
       ref={trackRef}
       className="track single"
+      onMouseDown={onTrackMouseDown}
       style={{ minHeight: trackH }}
       onDragOver={onDragOver}
       onDragLeave={() => { trackRef.current?.classList.remove('drop'); hideGuide(); }}
       onDrop={onDrop}
-      onClick={(e) => { if (e.target === trackRef.current) props.onSelect(null); }}
+      onClick={(e) => { if (suppressClickRef.current) return; if (e.target === trackRef.current) props.onSelect(null); }}
     >
       <span className="ads-rail-lbl">📢 ОБЪЯВЛЕНИЯ</span>
       <span className="pl-rail-lbl" style={{ top: sepTop + 3 }}>♪ МУЗЫКА</span>
@@ -239,7 +293,13 @@ export function TrackTimeline(props: Props) {
         );
       })}
 
-      {props.showPlayhead && <div className="playhead" style={{ left: pct(props.playheadFrac) }} aria-hidden="true" />}
+      {props.showPlayhead && (
+        <div className="playhead" style={{ left: pct(props.playheadFrac) }}>
+          <div className="ph-knob" onMouseDown={onScrubDown}
+            title={props.canScrub ? 'Перетащите — перемотка' : undefined} />
+          <div className="ph-time">{props.playheadLabel}</div>
+        </div>
+      )}
       <div ref={guideRef} className="drop-guide" aria-hidden="true" />
     </div>
   );
