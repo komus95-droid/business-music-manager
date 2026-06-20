@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { PersistedStore, Id, DayWindow, BlockOwner } from '@shared';
-import { findPlaylistOverlaps } from '@shared';
+import { findPlaylistOverlaps, resolveActiveWindow, dateToHHMM, offsetFromDayStart, spanMinutes } from '@shared';
 import type { StoreApi } from '../state/useStore';
 import { useAudio } from '../audio/AudioProvider';
 import { MiniTransport } from '../audio/MiniTransport';
 import { TrackTimeline } from './TrackTimeline';
 import { TimePopover } from './TimePopover';
 import type { TimeEdit } from './TimePopover';
-import { hourTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS, offsetToHHMM } from './timeline';
+import { rulerTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS, offsetToHHMM } from './timeline';
 import type { Zoom } from './timeline';
 import { useDayAudition } from './useDayAudition';
 
@@ -38,9 +38,35 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
   const { engine } = useAudio();
   const audition = useDayAudition(win, store, engine, canEdit, `${location.kind}:${location.id}`);
 
-  const hasConflict = findPlaylistOverlaps(win.blocks, store.audio).some((o) => !o.isCrossfade);
-  const ticks = hourTicks(win);
+  // линейка детальнее при увеличении: 60 / 30 / 15 / 5 мин
+  const intervalMin = (zoom === 'fit' || zoom === 90) ? 60 : zoom === 180 ? 30 : zoom === 360 ? 15 : 5;
+  const ticks = rulerTicks(win, intervalMin);
   const width = timelineWidthCss(zoom, windowSpan(win));
+  const hasConflict = findPlaylistOverlaps(win.blocks, store.audio).some((o) => !o.isCrossfade);
+
+  // в эфире — раз в секунду двигаем read-only плейхед текущего времени
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (canEdit) return;
+    const t = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [canEdit]);
+
+  // позиция плейхеда: студия — аудит (двигаемый); эфир — реальное время активного дня (read-only)
+  let onairFrac: number | null = null;
+  let onairLabel = '';
+  if (!canEdit) {
+    const aw = resolveActiveWindow(store, new Date());
+    if (aw.kind === location.kind && aw.id === location.id && !aw.off) {
+      const nowHHMM = dateToHHMM(new Date());
+      const off = offsetFromDayStart(win.start, nowHHMM);
+      const span = spanMinutes(win.start, win.end);
+      if (off >= 0 && off <= span) { onairFrac = span > 0 ? off / span : 0; onairLabel = nowHHMM; }
+    }
+  }
+  const showPlayhead = canEdit ? true : onairFrac != null;
+  const playheadFrac = canEdit ? audition.frac : (onairFrac ?? 0);
+  const playheadLabel = canEdit ? offsetToHHMM(win, audition.clockSec / 60) : onairLabel;
 
   // F (discoverability): линейка времени = полоса перемотки. Клик/протяжка по ней
   // двигает плейхед аудита (визуально во время, фиксация звука — на отпускании).
@@ -78,7 +104,9 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             style={{ cursor: canEdit ? 'pointer' : 'default' }}
             title={canEdit ? 'Клик/протяжка — переместить плейхед' : undefined}>
             {ticks.map((t, i) => (
-              <span key={i} className="tick" style={{ left: pct(t.frac) }}>{t.t}</span>
+              <span key={i} className={`tick${t.major ? ' major' : ' minor'}`} style={{ left: pct(t.frac) }}>
+                {t.major ? t.t : ':' + t.t.slice(3)}
+              </span>
             ))}
           </div>
 
@@ -86,8 +114,8 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             win={win} store={store} audio={store.audio}
             snap={snap} canEdit={canEdit}
             selectedId={selected} onSelect={setSelected}
-            playheadFrac={audition.frac} showPlayhead={canEdit} activeAnnId={audition.activeAnnId}
-            playheadLabel={offsetToHHMM(win, audition.clockSec / 60)} spanSec={audition.spanSec}
+            playheadFrac={playheadFrac} showPlayhead={showPlayhead} activeAnnId={audition.activeAnnId}
+            playheadLabel={playheadLabel} spanSec={audition.spanSec}
             canScrub={canEdit} onScrubPreview={audition.previewSeek} onScrubCommit={audition.seek}
             onAddPlaylist={(refId, t) => api.addPlaylistBlock(location, refId, t)}
             onMovePlaylist={(id, t) => api.movePlaylistBlock(location, id, t)}

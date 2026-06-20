@@ -294,9 +294,10 @@ export function TrackTimeline(props: Props) {
       })}
 
       {props.showPlayhead && (
-        <div className="playhead" style={{ left: pct(props.playheadFrac) }}>
-          <div className="ph-knob" onMouseDown={onScrubDown}
-            title={props.canScrub ? 'Перетащите — перемотка' : undefined} />
+        <div className={`playhead${props.canScrub ? '' : ' ro'}`} style={{ left: pct(props.playheadFrac) }}>
+          {props.canScrub && (
+            <div className="ph-knob" onMouseDown={onScrubDown} title="Перетащите — перемотка" />
+          )}
           <div className="ph-time">{props.playheadLabel}</div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import type { HHMM } from '@shared';
-import { spanMinutes, offsetFromDayStart, addMinutes } from '@shared';
+import { spanMinutes, offsetFromDayStart, addMinutes, hhmmToMin } from '@shared';
 
 /**
  * Геометрия шкалы дня. Всё считается в долях (0..1) от ОКНА дня [start, end],
@@ -151,4 +151,22 @@ export const ZOOM_PRESETS: ZoomPreset[] = [
 export function timelineWidthCss(zoom: Zoom, spanMin: number): string {
   if (zoom === 'fit') return '100%';
   return `${Math.max(1, Math.round((spanMin * zoom) / 60))}px`;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// v1.3.8 — детальная линейка (деления по зуму: 60/30/15/5 мин)
+// ──────────────────────────────────────────────────────────────────────────
+export interface RulerTick { t: HHMM; frac: number; major: boolean; }
+
+/** Отметки линейки с шагом intervalMin; major — отметка, попавшая на целый час. */
+export function rulerTicks(w: Window, intervalMin: number): RulerTick[] {
+  const span = windowSpan(w);
+  const startMin = hhmmToMin(w.start);
+  const first = (intervalMin - (startMin % intervalMin)) % intervalMin;
+  const out: RulerTick[] = [];
+  for (let off = first; off <= span; off += intervalMin) {
+    const abs = startMin + off;
+    out.push({ t: addMinutes(w.start, off), frac: span > 0 ? off / span : 0, major: abs % 60 === 0 });
+  }
+  return out;
 }
