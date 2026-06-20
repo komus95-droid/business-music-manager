@@ -42,6 +42,23 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
   const ticks = hourTicks(win);
   const width = timelineWidthCss(zoom, windowSpan(win));
 
+  // F (discoverability): линейка времени = полоса перемотки. Клик/протяжка по ней
+  // двигает плейхед аудита (визуально во время, фиксация звука — на отпускании).
+  function onRulerScrub(e: import('react').MouseEvent<HTMLDivElement>) {
+    if (!canEdit || e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const toSec = (x: number) => Math.max(0, Math.min((x - rect.left) / rect.width, 1)) * audition.spanSec;
+    audition.previewSeek(toSec(e.clientX));
+    const move = (ev: globalThis.MouseEvent) => audition.previewSeek(toSec(ev.clientX));
+    const up = (ev: globalThis.MouseEvent) => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      audition.seek(toSec(ev.clientX));
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+
   return (
     <>
       <div className="zoombar">
@@ -57,7 +74,9 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
 
       <div className="timeline-wrap">
         <div className="timeline" style={{ width }}>
-          <div className="ruler">
+          <div className="ruler" onMouseDown={onRulerScrub}
+            style={{ cursor: canEdit ? 'pointer' : 'default' }}
+            title={canEdit ? 'Клик/протяжка — переместить плейхед' : undefined}>
             {ticks.map((t, i) => (
               <span key={i} className="tick" style={{ left: pct(t.frac) }}>{t.t}</span>
             ))}
