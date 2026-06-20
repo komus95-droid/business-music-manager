@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { PersistedStore, Id, DayWindow, BlockOwner } from '@shared';
-import { findPlaylistOverlaps, findSilenceGaps } from '@shared';
+import { findPlaylistOverlaps } from '@shared';
 import type { StoreApi } from '../state/useStore';
 import { useAudio } from '../audio/AudioProvider';
 import { MiniTransport } from '../audio/MiniTransport';
-import { PlaylistLane } from './PlaylistLane';
-import { AnnouncementLane } from './AnnouncementLane';
+import { Timeline } from './Timeline';
 import { TimePopover } from './TimePopover';
 import type { TimeEdit } from './TimePopover';
 import { hourTicks, windowSpan, timelineWidthCss, ZOOM_PRESETS } from './timeline';
@@ -40,7 +39,6 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
   const audition = useDayAudition(win, store, engine, canEdit, `${location.kind}:${location.id}`);
 
   const hasConflict = findPlaylistOverlaps(win.blocks, store.audio).some((o) => !o.isCrossfade);
-  const silence = findSilenceGaps(win);
   const ticks = hourTicks(win);
   const width = timelineWidthCss(zoom, windowSpan(win));
 
@@ -65,31 +63,18 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             ))}
           </div>
 
-          <div className="track-frame">
-            <AnnouncementLane
-              win={win} announcements={store.announcements}
-              snap={snap} canEdit={canEdit}
-              selectedId={selected} onSelect={setSelected}
-              onAdd={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
-              onMove={(id, t) => api.moveAnnouncementBlock(location, id, t)}
-              onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
-              onEditTime={(id, value, x, y) => setEdit({ kind: 'announcement', id, value, x, y })}
-            />
-
-            <PlaylistLane
-              win={win} playlists={store.playlists} audio={store.audio}
-              silence={silence} snap={snap} canEdit={canEdit}
-              selectedId={selected} onSelect={setSelected}
-              onAdd={(refId, t) => api.addPlaylistBlock(location, refId, t)}
-              onMove={(id, t) => api.movePlaylistBlock(location, id, t)}
-              onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
-              onEditTime={(id, value, x, y) => setEdit({ kind: 'playlist', id, value, x, y })}
-            />
-
-            {canEdit && (
-              <div className="playhead" style={{ left: pct(audition.frac) }} aria-hidden="true" />
-            )}
-          </div>
+          <Timeline
+            win={win} store={store} audio={store.audio}
+            snap={snap} canEdit={canEdit}
+            selectedId={selected} onSelect={setSelected}
+            playheadFrac={audition.frac} showPlayhead={canEdit}
+            onAddPlaylist={(refId, t) => api.addPlaylistBlock(location, refId, t)}
+            onMovePlaylist={(id, t) => api.movePlaylistBlock(location, id, t)}
+            onAddAnnouncement={(refId, t) => api.addAnnouncementBlock(location, refId, t)}
+            onMoveAnnouncement={(id, t) => api.moveAnnouncementBlock(location, id, t)}
+            onRemove={(id) => { api.removeBlock(location, id); setSelected(null); }}
+            onEditTime={(kind, id, value, x, y) => setEdit({ kind, id, value, x, y })}
+          />
         </div>
       </div>
 

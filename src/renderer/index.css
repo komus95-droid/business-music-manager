@@ -687,3 +687,46 @@
 .a-prev{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
   border:none;font-size:9px;display:grid;place-items:center;flex-shrink:0;cursor:pointer}
 .a-prev:hover{background:var(--accent);color:#fff}
+
+/* ===== v1.3.3 — единая дорожка .track (верный перенос прототипа) ===== */
+.timeline-wrap{flex:none}                         /* лента по высоте контента, без растяжки */
+.track.single{flex:none !important;min-height:0 !important;margin-top:6px;border:1px solid var(--line-2)}
+.track.single::before{display:none}               /* фикс-разделитель прототипа убираем — рисуем свой */
+.rail-sep{position:absolute;left:0;right:0;border-top:1px dashed var(--line-2);opacity:.6;pointer-events:none;z-index:1}
+
+/* музыкальный блок: фикс-высота, базовый цвет --c + блик (как у прототипа) */
+.track .block{position:absolute;border-radius:12px;color:#fff;overflow:hidden;cursor:grab;user-select:none;
+  box-shadow:0 6px 16px rgba(0,0,0,.28);display:flex;flex-direction:column;justify-content:center;
+  padding:8px 11px 8px 44px;background-color:var(--c);
+  background-image:linear-gradient(135deg,rgba(255,255,255,.20),rgba(0,0,0,.22));container-type:inline-size}
+.track .block.has-play{min-width:90px}
+.track .block:active{cursor:grabbing}
+.track .block.sel{outline:2px solid #fff;outline-offset:-2px;z-index:6}
+.track .block.over{outline:2px solid #ff5b5b;outline-offset:-2px}
+.track .block .b-time{cursor:pointer;align-self:flex-start;border-bottom:1px dotted rgba(255,255,255,.45)}
+.track .block .b-time:hover{border-bottom-color:#fff}
+
+/* плашка объявления: в одну строку, фикс-ширина */
+.track .block.ad{flex-direction:row;align-items:center;gap:7px;padding:4px 9px;border-radius:9px;
+  box-shadow:0 5px 14px rgba(0,0,0,.3)}
+.track .block.ad .b-title{flex:1;min-width:0;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track .block.ad .b-sub{flex-shrink:0;font-size:9.5px;opacity:.92;font-variant-numeric:tabular-nums;
+  cursor:pointer;white-space:nowrap;border-bottom:1px dotted rgba(255,255,255,.5)}
+.track .block.ad .b-sub:hover{border-bottom-color:#fff}
+
+/* служебные слои дорожки (перекрывают фикс-позиции прототипа своими, top — инлайном) */
+.track .ad-pin{position:absolute;width:2px;bottom:auto;
+  background:repeating-linear-gradient(180deg,var(--orange),var(--orange) 4px,transparent 4px,transparent 8px);opacity:.5;pointer-events:none;z-index:1}
+.track .gap{position:absolute;border-radius:10px;border:1px dashed rgba(235,87,87,.42);overflow:hidden;
+  background:repeating-linear-gradient(45deg,rgba(235,87,87,.12),rgba(235,87,87,.12) 7px,rgba(235,87,87,.03) 7px,rgba(235,87,87,.03) 14px);
+  display:grid;place-items:center;z-index:0}
+.track .gap span{font-size:10px;font-weight:700;color:#ff9b9b;white-space:nowrap;letter-spacing:.5px;opacity:.9}
+.track .overlap{position:absolute;height:8px;border-radius:3px;z-index:5;
+  background:repeating-linear-gradient(45deg,#eb5757,#eb5757 5px,#b53b3b 5px,#b53b3b 10px)}
+.track .overlap.cf{background:repeating-linear-gradient(45deg,var(--accent),var(--accent) 5px,#1c5fb5 5px,#1c5fb5 10px)}
+.track .playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 10px var(--accent);z-index:6;pointer-events:none}
+.track .drop-guide{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 10px var(--accent);display:none;z-index:7;pointer-events:none}
+
+/* адаптив узких музыкальных блоков (container queries) */
+@container (max-width: 150px){ .track .block.has-play .b-wave{display:none} }
+@container (max-width: 104px){ .track .block.has-play .b-time{display:none} }
