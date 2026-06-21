@@ -117,6 +117,7 @@ export function ScheduleBody({ win, location, store, api, snap, canEdit }: Props
             playheadFrac={playheadFrac} showPlayhead={showPlayhead} activeAnnId={audition.activeAnnId}
             playheadLabel={playheadLabel} spanSec={audition.spanSec}
             canScrub={canEdit} onScrubPreview={audition.previewSeek} onScrubCommit={audition.seek}
+            showTrackBounds={zoom === 360 || zoom === 720}
             onAddPlaylist={(refId, t) => api.addPlaylistBlock(location, refId, t)}
             onMovePlaylist={(id, t) => api.movePlaylistBlock(location, id, t)}
             onAddAnnouncement={(refId, t) => api.addAnnouncementBlock(location, refId, t)}

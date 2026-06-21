@@ -767,3 +767,15 @@
 .track .playhead.ro{background:#fff}
 .track .ph-time{background:var(--accent);color:#fff}
 .track .ph-knob{background:#fff;border-color:var(--accent)}
+
+/* ===== v1.3.9 — маркер плейхеда (флажок сверху) + штриховка границ треков ===== */
+/* треугольный «флажок» плейхеда сверху линии (стандартный вид playhead в DAW) */
+.track .playhead .ph-flag{position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid #fff;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.8));z-index:9}
+.track .playhead.ro .ph-flag{cursor:default}
+.track .playhead .ph-knob{display:none}              /* старый серединный кружок больше не нужен */
+
+/* штриховка границ треков внутри блока плейлиста (видна на 4×/8×) */
+.block .trk-bound{position:absolute;top:0;bottom:0;width:0;
+  border-left:1px dashed rgba(255,255,255,.5);pointer-events:none;z-index:2}

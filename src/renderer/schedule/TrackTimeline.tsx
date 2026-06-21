@@ -35,6 +35,7 @@ interface Props {
   playheadLabel: string;
   spanSec: number;
   canScrub: boolean;
+  showTrackBounds: boolean;
   onScrubPreview(sec: number): void;
   onScrubCommit(sec: number): void;
   onSelect(id: Id | null): void;
@@ -48,6 +49,15 @@ interface Props {
 
 const pct = (f: number) => `${f * 100}%`;
 const WAVE = Array.from({ length: 26 }, (_, i) => 30 + Math.round(48 * Math.abs(Math.sin(i * 1.3) * Math.cos(i * 0.55))));
+
+// доли ширины блока на границах треков (для штриховки на крупном зуме)
+function cumTrackFracs(tracks: { durationSec: number }[]): number[] {
+  const total = tracks.reduce((a, t) => a + t.durationSec, 0) || 1;
+  const out: number[] = [];
+  let cum = 0;
+  for (let i = 0; i < tracks.length - 1; i++) { cum += tracks[i].durationSec; out.push(cum / total); }
+  return out;
+}
 
 // вертикальная раскладка дорожки (px)
 const AD_TOP = 26;        // первый ярус объявлений (под подписью рельсы)
@@ -255,6 +265,10 @@ export function TrackTimeline(props: Props) {
               onClick={(e) => { if (!canEdit) return; e.stopPropagation(); props.onEditTime('playlist', b.id, b.start, e.clientX, e.clientY); }}>
               {b.start}–{b.end}</span>
             <span className="b-wave" aria-hidden="true">{WAVE.map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</span>
+            {props.showTrackBounds && pl.tracks.length > 1 &&
+              cumTrackFracs(pl.tracks).map((f, i) => (
+                <span key={`tb${i}`} className="trk-bound" style={{ left: pct(f) }} aria-hidden="true" />
+              ))}
             {sel && canEdit && (
               <button type="button" className="b-x" aria-label="Удалить блок"
                 onClick={(e) => { e.stopPropagation(); props.onRemove(b.id); }}>×</button>
@@ -295,9 +309,10 @@ export function TrackTimeline(props: Props) {
 
       {props.showPlayhead && (
         <div className={`playhead${props.canScrub ? '' : ' ro'}`} style={{ left: pct(props.playheadFrac) }}>
-          {props.canScrub && (
-            <div className="ph-knob" onMouseDown={onScrubDown} title="Перетащите — перемотка" />
-          )}
+          <div className="ph-flag"
+            onMouseDown={props.canScrub ? onScrubDown : undefined}
+            title={props.canScrub ? 'Перетащите — перемотка' : 'Текущее время эфира'}
+            style={{ cursor: props.canScrub ? 'grab' : 'default' }} />
           <div className="ph-time">{props.playheadLabel}</div>
         </div>
       )}
