@@ -170,12 +170,13 @@ function uniqueFileName(dir: string, original: string): string {
   return candidate;
 }
 
-/** Длительность MP3 из метаданных. music-metadata — ESM-only, грузим динамически. */
+/** Длительность MP3 из метаданных. music-metadata v7 — CommonJS (Node 16 / Electron 22). */
 async function readDurationSec(file: string): Promise<number> {
   try {
-    const mm = await import('music-metadata');
-    const meta = await mm.parseFile(file);
-    return Math.round(meta.format.duration ?? 0);
+    const mm: any = await import('music-metadata');
+    const parseFile = mm.parseFile ?? mm.default?.parseFile;
+    const meta = await parseFile(file);
+    return Math.round(meta?.format?.duration ?? 0);
   } catch (err) {
     console.error('Не удалось прочитать длительность:', file, err);
     return 0;

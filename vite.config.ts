@@ -25,6 +25,7 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'chrome108',        // Electron 22 = Chromium 108 (поддержка Win7/8.1)
     outDir: 'dist',
     emptyOutDir: true,
     // Electron грузит index.html по file://, где ES-модули (<script type="module">)

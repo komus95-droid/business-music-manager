@@ -40,7 +40,7 @@ jobs:
         run: npx tsc --project tsconfig.electron.json
 
       - name: Bundle preload (самодостаточный, работает в любом sandbox)
-        run: npx esbuild src/preload/preload.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=dist-electron/preload/preload.js
+        run: npx esbuild src/preload/preload.ts --bundle --platform=node --target=node16 --external:electron --format=cjs --outfile=dist-electron/preload/preload.js
 
       - name: Smoke tests (ядро логики)
         run: node test/smoke.cjs
